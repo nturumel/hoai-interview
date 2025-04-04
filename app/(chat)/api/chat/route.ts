@@ -23,8 +23,6 @@ import {
 import { generateTitleFromUserMessage } from '../../actions';
 import { createDocument } from '@/lib/ai/tools/create-document';
 import { updateDocument } from '@/lib/ai/tools/update-document';
-import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
-import { getWeather } from '@/lib/ai/tools/get-weather';
 
 export const maxDuration = 60;
 
@@ -56,7 +54,7 @@ export async function POST(request: Request) {
   }
 
   await saveMessages({
-    messages: [{ ...userMessage, createdAt: new Date(), chatId: id }],
+    messages: [{ ...userMessage, createdAt: new Date(), chatId: id, experimental_attachments: userMessage.experimental_attachments, parts: userMessage.parts }],
   });
 
   return createDataStreamResponse({
@@ -67,24 +65,15 @@ export async function POST(request: Request) {
         messages,
         maxSteps: 5,
         experimental_activeTools:
-          selectedChatModel === 'chat-model-reasoning'
-            ? []
-            : [
-                'getWeather',
-                'createDocument',
-                'updateDocument',
-                'requestSuggestions',
-              ],
+          [
+            'createDocument',
+            'updateDocument',
+          ],
         experimental_transform: smoothStream({ chunking: 'word' }),
         experimental_generateMessageId: generateUUID,
         tools: {
-          getWeather,
-          createDocument: createDocument({ session, dataStream }),
+          createDocument: createDocument({ session, dataStream, chatId: id }),
           updateDocument: updateDocument({ session, dataStream }),
-          requestSuggestions: requestSuggestions({
-            session,
-            dataStream,
-          }),
         },
         onFinish: async ({ response, reasoning }) => {
           if (session.user?.id) {
@@ -102,6 +91,8 @@ export async function POST(request: Request) {
                     role: message.role,
                     content: message.content,
                     createdAt: new Date(),
+                    experimental_attachments: [], // TODO: get rid of this, assistant messages don't have attachments
+                    parts: [], // TODO: get rid of this, assistant messages don't have parts
                   };
                 }),
               });
@@ -120,7 +111,8 @@ export async function POST(request: Request) {
         sendReasoning: true,
       });
     },
-    onError: () => {
+    onError: (error: unknown) => {
+      console.error('Error in chat', error);
       return 'Oops, an error occured!';
     },
   });

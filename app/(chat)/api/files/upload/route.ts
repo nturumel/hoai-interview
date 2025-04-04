@@ -1,17 +1,18 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/app/(auth)/auth';
+import { storageService } from '@/lib/storage';
 
 // Use Blob instead of File since File is not available in Node.js environment
 const FileSchema = z.object({
   file: z
     .instanceof(Blob)
-    .refine((file) => file.size <= 5 * 1024 * 1024, {
-      message: 'File size should be less than 5MB',
+    .refine((file) => file.size <= 10 * 1024 * 1024, {
+      message: 'File size should be less than 10MB',
     })
     // Update the file type based on the kind of files you want to accept
-    .refine((file) => ['image/jpeg', 'image/png'].includes(file.type), {
-      message: 'File type should be JPEG or PNG',
+    .refine((file) => ['image/jpeg', 'image/png', 'application/pdf'].includes(file.type), {
+      message: 'File type should be JPEG, PNG, or PDF',
     }),
 });
 
@@ -50,22 +51,23 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(fileBuffer);
 
     try {
-      // Generate unique filename with timestamp
-      const timestamp = Date.now();
-      const uniqueFilename = `${timestamp}-${filename}`;
-
-      // Create data URL for immediate preview
-      const dataURL = `data:${file.type};base64,${buffer.toString('base64')}`;
+      const { url, pathname } = await storageService.upload(
+        buffer,
+        filename,
+        file.type
+      );
 
       return NextResponse.json({
-        url: dataURL,
-        pathname: `/uploads/${uniqueFilename}`,
+        url,
+        pathname,
         contentType: file.type,
       });
     } catch (error) {
+      console.error('Upload failed:', error);
       return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
     }
   } catch (error) {
+    console.error('Failed to process request:', error);
     return NextResponse.json(
       { error: 'Failed to process request' },
       { status: 500 },

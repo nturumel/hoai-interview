@@ -1,27 +1,18 @@
+import { cacheMiddleware } from '@/ai/middleware';
 import { openai } from '@ai-sdk/openai';
-import { fireworks } from '@ai-sdk/fireworks';
-import {
-  customProvider,
-  extractReasoningMiddleware,
-  wrapLanguageModel,
-} from 'ai';
+import { customProvider, wrapLanguageModel } from 'ai';
 
-export const DEFAULT_CHAT_MODEL: string = 'chat-model-large';
+export const DEFAULT_CHAT_MODEL: string = 'openai-multimodal-model';
 
 export const myProvider = customProvider({
   languageModels: {
-    'chat-model-small': openai('gpt-4o-mini'),
-    'chat-model-large': openai('gpt-4o'),
-    'chat-model-reasoning': wrapLanguageModel({
-      model: fireworks('accounts/fireworks/models/deepseek-r1'),
-      middleware: extractReasoningMiddleware({ tagName: 'think' }),
+    // Multimodal models
+    'openai-multimodal-model': wrapLanguageModel({
+      model: openai('gpt-4o'),
+      middleware: cacheMiddleware,
     }),
-    'title-model': openai('gpt-4o-mini'),
+    'title-model': openai('gpt-4-turbo'),
     'block-model': openai('gpt-4o-mini'),
-  },
-  imageModels: {
-    'small-model': openai.image('dall-e-2'),
-    'large-model': openai.image('dall-e-3'),
   },
 });
 
@@ -33,8 +24,8 @@ interface ChatModel {
 
 export const chatModels: Array<ChatModel> = [
   {
-    id: 'chat-model-large',
-    name: 'Large model',
-    description: 'Large model for complex, multi-step tasks',
+    id: 'openai-multimodal-model',
+    name: 'OpenAI Model (Multimodal)',
+    description: 'GPT-4o with image and text understanding',
   },
 ];

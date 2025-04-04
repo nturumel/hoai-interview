@@ -1,7 +1,8 @@
 import 'server-only';
-import { and, asc, desc, eq, gt, gte, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, gte, inArray, or, ilike, sql, like, getTableColumns, lte } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
+import { nanoid } from 'nanoid';
 
 import {
   chat,
@@ -11,8 +12,14 @@ import {
   type Message,
   message,
   vote,
+  invoice,
+  lineItem,
+  vendor,
+  invoiceDocument,
 } from './schema';
 import type { BlockKind } from '@/components/block';
+import type { DocumentLink, Invoice, InvoiceItem } from '@/types/invoice';
+import { invoiceToModel, modelToInvoice } from '@/types/invoice';
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
@@ -20,7 +27,7 @@ import type { BlockKind } from '@/components/block';
 
 // biome-ignore lint: Forbidden non-null assertion.
 const sqlite = new Database('sqlite.db');
-const db = drizzle(sqlite);
+export const db = drizzle(sqlite);
 
 export async function saveChat({
   id,
@@ -161,7 +168,7 @@ export async function saveDocument({
       title,
       kind,
       content,
-      // userId,
+      userId,
       createdAt: new Date(),
     });
   } catch (error) {
@@ -317,6 +324,154 @@ export async function updateChatVisiblityById({
     return await db.update(chat).set({ visibility }).where(eq(chat.id, chatId));
   } catch (error) {
     console.error('Failed to update chat visibility in database');
+    throw error;
+  }
+}
+
+export async function upsertInvoiceWithItems(
+  invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt' | 'items'> & { id?: string; lastEditedBy?: string },
+  items?: InvoiceItem[],
+  documentInfo?: DocumentLink[]
+) {
+  if (!invoiceData.vendorId) {
+    throw new Error('vendorId is required');
+  }
+
+  try {
+    const dbInvoice = invoiceToModel(invoiceData as Invoice);
+    const now = new Date();
+
+    return await db.transaction(async (tx) => {
+      let invoiceId: string;
+
+      if (invoiceData.id) {
+        // Update existing invoice
+        await tx
+          .update(invoice)
+          .set({
+            ...dbInvoice,
+            invoiceDate: new Date(invoiceData.date),
+            dueDate: new Date(invoiceData.dueDate),
+            updatedAt: now,
+            ...(invoiceData.lastEditedBy && { lastEditedBy: invoiceData.lastEditedBy }),
+          })
+          .where(eq(invoice.id, invoiceData.id));
+        invoiceId = invoiceData.id;
+      } else {
+        // Insert new invoice
+        const newId = nanoid();
+        await tx.insert(invoice).values({
+          ...dbInvoice,
+          id: newId,
+          invoiceDate: new Date(invoiceData.date),
+          dueDate: new Date(invoiceData.dueDate),
+          createdAt: now,
+          updatedAt: now,
+          ...(invoiceData.lastEditedBy && { lastEditedBy: invoiceData.lastEditedBy }),
+        });
+        invoiceId = newId;
+      }
+
+      if (items && items.length > 0) {
+        // Delete existing line items if updating
+        if (invoiceData.id) {
+          await tx.delete(lineItem).where(eq(lineItem.invoiceId, invoiceId));
+        }
+
+        // Insert new line items
+        await tx.insert(lineItem).values(
+          items.map((item) => ({
+            id: nanoid(),
+            invoiceId,
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            amount: item.amount,
+            createdAt: now,
+            updatedAt: now,
+          }))
+        );
+      } else if (invoiceData.id) {
+        // If updating and no items provided, potentially clear existing items
+        await tx.delete(lineItem).where(eq(lineItem.invoiceId, invoiceId));
+      }
+
+      // Upsert Invoice Document Link
+      if (documentInfo && documentInfo.length > 0) {
+        for (const doc of documentInfo) {
+          await tx
+            .insert(invoiceDocument)
+            .values({
+              invoiceId,
+              documentUrl: doc.documentUrl,
+              documentName: doc.documentName,
+            })
+            .onConflictDoUpdate({
+              target: [invoiceDocument.invoiceId, invoiceDocument.documentUrl],
+              set: {
+                documentName: doc.documentName,
+              },
+            });
+        }
+      }
+
+      return invoiceId;
+    });
+  } catch (error) {
+    console.error(`Failed to upsert invoice (ID: ${invoiceData.id ?? 'new'}):`, error);
+    if (error instanceof Error && 'code' in error) {
+      console.error(`Database error code: ${error.code}`);
+    }
+    throw new Error(`Database operation failed during invoice upsert: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+export async function getOrCreateVendor(name: string, address: string) {
+  try {
+    // First try to find an existing vendor
+    const existingVendor = await db.select().from(vendor).where(eq(vendor.name, name)).limit(1);
+
+    if (existingVendor.length > 0) {
+      return existingVendor[0];
+    }
+
+    // If not found, create a new vendor
+    const newVendorId = nanoid();
+    await db.insert(vendor).values({
+      id: newVendorId,
+      name,
+      address,
+      createdAt: new Date(),
+    });
+
+    return {
+      id: newVendorId,
+      name,
+      address,
+      createdAt: new Date(),
+    };
+  } catch (error) {
+    console.error('Failed to get or create vendor:', error);
+    throw error;
+  }
+}
+
+export async function checkDuplicateInvoice(vendorId: string, invoiceNumber: string, totalAmount: number) {
+  try {
+    const existingInvoice = await db.select()
+      .from(invoice)
+      .where(
+        and(
+          eq(invoice.vendorId, vendorId),
+          eq(invoice.invoiceNumber, invoiceNumber),
+          eq(invoice.totalAmount, totalAmount)
+        )
+      )
+      .limit(1);
+
+    return existingInvoice.length > 0;
+  } catch (error) {
+    console.error('Failed to check for duplicate invoice:', error);
     throw error;
   }
 }

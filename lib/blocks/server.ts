@@ -2,11 +2,15 @@ import { codeDocumentHandler } from '@/blocks/code/server';
 import { imageDocumentHandler } from '@/blocks/image/server';
 import { sheetDocumentHandler } from '@/blocks/sheet/server';
 import { textDocumentHandler } from '@/blocks/text/server';
+import { invoiceDocumentHandler } from '@/blocks/invoice/server';
 import type { BlockKind } from '@/components/block';
 import type { DataStreamWriter } from 'ai';
 import type { Document } from '../db/schema';
 import { saveDocument } from '../db/queries';
 import type { Session } from 'next-auth';
+import { invoiceSearchDocumentHandler } from '@/blocks/invoice-search/server';
+
+export const blockKinds = ['text', 'code', 'image', 'sheet', 'invoice', 'invoice-search'] as const;
 
 export interface SaveDocumentProps {
   id: string;
@@ -21,6 +25,7 @@ export interface CreateDocumentCallbackProps {
   title: string;
   dataStream: DataStreamWriter;
   session: Session;
+  chatId: string;
 }
 
 export interface UpdateDocumentCallbackProps {
@@ -49,6 +54,7 @@ export function createDocumentHandler<T extends BlockKind>(config: {
         title: args.title,
         dataStream: args.dataStream,
         session: args.session,
+        chatId: args.chatId,
       });
 
       if (args.session?.user?.id) {
@@ -94,6 +100,6 @@ export const documentHandlersByBlockKind: Array<DocumentHandler> = [
   codeDocumentHandler,
   imageDocumentHandler,
   sheetDocumentHandler,
+  invoiceDocumentHandler,
+  invoiceSearchDocumentHandler,
 ];
-
-export const blockKinds = ['text', 'code', 'image', 'sheet'] as const;

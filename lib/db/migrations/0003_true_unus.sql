@@ -1,0 +1,1 @@
+ALTER TABLE `Vendor` ADD `updatedAt` integer NOT NULL DEFAULT '"2025-04-09T03:44:47.644Z"';

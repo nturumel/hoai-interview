@@ -7,9 +7,10 @@ import { blockKinds, documentHandlersByBlockKind } from '@/lib/blocks/server';
 interface CreateDocumentProps {
   session: Session;
   dataStream: DataStreamWriter;
+  chatId: string;
 }
 
-export const createDocument = ({ session, dataStream }: CreateDocumentProps) =>
+export const createDocument = ({ session, dataStream, chatId }: CreateDocumentProps) =>
   tool({
     description:
       'Create a document for a writing or content creation activities. This tool will call other functions that will generate the contents of the document based on the title and kind.',
@@ -54,6 +55,7 @@ export const createDocument = ({ session, dataStream }: CreateDocumentProps) =>
         title,
         dataStream,
         session,
+        chatId,
       });
 
       dataStream.writeData({ type: 'finish', content: '' });
