@@ -13,24 +13,22 @@ export const myProvider = customProvider({
     'chat-model-small': openai('gpt-4o-mini'),
     'chat-model-large': openai('gpt-4o'),
 
-    // Reasoning models
-    'chat-model-reasoning': wrapLanguageModel({
-      model: anthropic('claude-3-opus'),
-      middleware: extractReasoningMiddleware({ tagName: 'think' }),
-    }),
+    // Reasoning models (wrapped Claude Sonnet + Opus)
     'claude-opus-reasoning': wrapLanguageModel({
-      model: anthropic('claude-3-opus'),
+      model: anthropic('claude-3-opus-20240229'),
       middleware: extractReasoningMiddleware({ tagName: 'think' }),
     }),
     'claude-sonnet-reasoning': wrapLanguageModel({
-      model: anthropic('claude-3-sonnet'),
+      model: anthropic('claude-3-sonnet-20240229'),
       middleware: extractReasoningMiddleware({ tagName: 'think' }),
     }),
 
-    // Claude models (text + multimodal)
-    'claude-opus': anthropic('claude-3-opus'),
-    'claude-sonnet': anthropic('claude-3-sonnet'),
-    'claude-opus-multimodal': anthropic('claude-3-opus'),
+    // Claude base models (latest known versions)
+    'claude-opus': anthropic('claude-3-opus-20240229'),
+    'claude-sonnet': anthropic('claude-3-sonnet-20240229'),
+
+    // Multimodal model (Sonnet supports image+text input)
+    'claude-sonnet-multimodal': anthropic('claude-3-sonnet-20240229'),
 
     // Supporting models
     'title-model': openai('gpt-4o-mini'),
@@ -75,8 +73,8 @@ export const chatModels: Array<ChatModel> = [
     description: 'Claude Sonnet wrapped for reasoning with performance in mind',
   },
   {
-    id: 'claude-opus-multimodal',
-    name: 'Claude Opus (Multimodal)',
+    id: 'claude-sonnet-multimodal',
+    name: 'Claude Sonnet (Multimodal)',
     description: 'Multimodal Claude model for image + text understanding',
   },
 ];
