@@ -1,37 +1,30 @@
 import { myProvider } from '@/lib/ai/models';
 import { invoicePrompt, updateDocumentPrompt } from '@/lib/ai/prompts';
 import { createDocumentHandler } from '@/lib/blocks/server';
+import { getMessagesByChatId } from '@/lib/db/queries';
 import { streamObject } from 'ai';
 import { z } from 'zod';
-
-const invoiceSchema = z.object({
-  invoiceNumber: z.string(),
-  date: z.string(),
-  dueDate: z.string(),
-  totalAmount: z.number(),
-  currency: z.string(),
-  vendorName: z.string(),
-  vendorAddress: z.string(),
-  customerName: z.string(),
-  customerAddress: z.string(),
-  items: z.array(z.object({
-    description: z.string(),
-    quantity: z.number(),
-    unitPrice: z.number(),
-    amount: z.number(),
-  })),
-  status: z.enum(['pending', 'paid', 'overdue']),
-});
+import { invoiceSchema } from '@/types/invoice';
 
 export const invoiceDocumentHandler = createDocumentHandler<'invoice'>({
   kind: 'invoice',
-  onCreateDocument: async ({ title, dataStream }) => {
+  onCreateDocument: async ({ title, dataStream, chatId, experimental_attachments }) => {
+    // Get message from chatId
+    const message = await getMessagesByChatId({id: chatId});
+    const formattedMessage = message.map((m) => `${m.role}: ${m.content}`).join('\n');
+
+    // Format attachments
+    const attachments = experimental_attachments?.map((a) => {
+      const { filename, type, content } = {...a};
+      return `Filename: ${filename}\nType: ${type}\nContent: ${JSON.stringify(content)}`;
+    }).join('\n');
+
     let draftContent = '';
 
     const { fullStream } = streamObject({
       model: myProvider.languageModel('openai-multimodal-model'),
       system: invoicePrompt,
-      prompt: title,
+      prompt: `Title: ${title}\n\n${formattedMessage}\n\nAttachments: ${attachments}`,
       schema: z.object({
         invoice: invoiceSchema.describe('Invoice details'),
       }),

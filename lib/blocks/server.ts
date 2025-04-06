@@ -8,6 +8,8 @@ import type { DataStreamWriter } from 'ai';
 import type { Document } from '../db/schema';
 import { saveDocument } from '../db/queries';
 import type { Session } from 'next-auth';
+import type { z } from 'zod';
+import type { experimentalAttachmentsSchema } from '../ai/tools/create-document';
 
 export const blockKinds = ['text', 'code', 'image', 'sheet', 'invoice'] as const;
 
@@ -24,6 +26,8 @@ export interface CreateDocumentCallbackProps {
   title: string;
   dataStream: DataStreamWriter;
   session: Session;
+  chatId: string;
+  experimental_attachments?: z.infer<typeof experimentalAttachmentsSchema>;
 }
 
 export interface UpdateDocumentCallbackProps {
@@ -52,6 +56,8 @@ export function createDocumentHandler<T extends BlockKind>(config: {
         title: args.title,
         dataStream: args.dataStream,
         session: args.session,
+        chatId: args.chatId,
+        experimental_attachments: args.experimental_attachments,
       });
 
       if (args.session?.user?.id) {

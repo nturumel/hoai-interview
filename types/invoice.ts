@@ -1,0 +1,112 @@
+import { z } from 'zod';
+
+// Base types
+export interface InvoiceItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+}
+
+export type InvoiceStatus = 'pending' | 'paid' | 'overdue';
+
+// Core invoice interface used across the application
+export interface Invoice {
+  id?: string;
+  invoiceNumber: string;
+  date: string;
+  dueDate: string;
+  totalAmount: number;
+  currency: string;
+  vendorId?: string;
+  vendorName: string;
+  vendorAddress: string;
+  customerName: string;
+  customerAddress: string;
+  items: InvoiceItem[];
+  status: InvoiceStatus;
+  createdAt?: Date;
+  updatedAt?: Date;
+  lastEditedBy?: string;
+}
+
+// Zod schema for validation
+export const invoiceItemSchema = z.object({
+  description: z.string(),
+  quantity: z.number().min(0),
+  unitPrice: z.number().min(0),
+  amount: z.number().min(0),
+});
+
+export const invoiceSchema = z.object({
+  id: z.string().optional(),
+  invoiceNumber: z.string(),
+  date: z.string(),
+  dueDate: z.string(),
+  totalAmount: z.number().min(0),
+  currency: z.string(),
+  vendorId: z.string().optional(),
+  vendorName: z.string(),
+  vendorAddress: z.string(),
+  customerName: z.string(),
+  customerAddress: z.string(),
+  items: z.array(invoiceItemSchema),
+  status: z.enum(['pending', 'paid', 'overdue']),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+  lastEditedBy: z.string().optional(),
+});
+
+// Type for the database model (matches schema.ts)
+export interface InvoiceModel {
+  id: string;
+  vendorId: string;
+  invoiceNumber: string;
+  customerName: string;
+  invoiceDate: number; // timestamp
+  dueDate: number; // timestamp
+  totalAmount: number;
+  status: InvoiceStatus;
+  createdAt: number; // timestamp
+  updatedAt: number; // timestamp
+  lastEditedBy?: string;
+}
+
+// Helper functions for converting between types
+export function invoiceToModel(invoice: Invoice): Omit<InvoiceModel, 'id' | 'createdAt' | 'updatedAt'> {
+  if (!invoice.vendorId) {
+    throw new Error('vendorId is required when converting to database model');
+  }
+  
+  return {
+    vendorId: invoice.vendorId,
+    invoiceNumber: invoice.invoiceNumber,
+    customerName: invoice.customerName,
+    invoiceDate: new Date(invoice.date).getTime(),
+    dueDate: new Date(invoice.dueDate).getTime(),
+    totalAmount: invoice.totalAmount,
+    status: invoice.status,
+    lastEditedBy: invoice.lastEditedBy,
+  };
+}
+
+export function modelToInvoice(model: InvoiceModel, vendor: { name: string; address: string }, items: InvoiceItem[]): Invoice {
+  return {
+    id: model.id,
+    invoiceNumber: model.invoiceNumber,
+    date: new Date(model.invoiceDate).toISOString(),
+    dueDate: new Date(model.dueDate).toISOString(),
+    totalAmount: model.totalAmount,
+    currency: 'USD', // TODO: Add currency to database model
+    vendorId: model.vendorId,
+    vendorName: vendor.name,
+    vendorAddress: vendor.address,
+    customerName: model.customerName,
+    customerAddress: '', // TODO: Add customer address to database model
+    items,
+    status: model.status,
+    createdAt: new Date(model.createdAt),
+    updatedAt: new Date(model.updatedAt),
+    lastEditedBy: model.lastEditedBy,
+  };
+} 

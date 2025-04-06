@@ -176,3 +176,45 @@
 .suggestion-highlight {
     @apply bg-blue-200 hover:bg-blue-300 dark:hover:bg-blue-400/50 dark:text-blue-50 dark:bg-blue-500/40;
 }
+
+/* Status Colors */
+.status-warning {
+  @apply bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200;
+}
+
+.status-success {
+  @apply bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200;
+}
+
+.status-error {
+  @apply bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200;
+}
+
+/* Invoice Editor */
+.invoice-badge {
+  @apply px-2 py-1 rounded-full text-xs font-medium;
+}
+
+.invoice-text-muted {
+  @apply text-sm text-zinc-500;
+}
+
+.invoice-input {
+  @apply border border-input dark:border-input rounded px-2 py-1 bg-background dark:bg-background text-foreground dark:text-foreground;
+}
+
+.invoice-container {
+  @apply space-y-6 p-4 bg-card dark:bg-card text-card-foreground dark:text-card-foreground rounded-lg shadow;
+}
+
+.invoice-table-cell {
+  @apply py-2;
+}
+
+.invoice-button-primary {
+  @apply px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded hover:bg-primary/90;
+}
+
+.invoice-button-secondary {
+  @apply px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground;
+}

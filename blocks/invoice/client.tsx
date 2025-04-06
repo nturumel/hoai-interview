@@ -11,27 +11,6 @@ import { toast } from 'sonner';
 
 type Metadata = any;
 
-interface InvoiceItem {
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  amount: number;
-}
-
-interface InvoiceContent {
-  invoiceNumber: string;
-  date: string;
-  dueDate: string;
-  totalAmount: number;
-  currency: string;
-  vendorName: string;
-  vendorAddress: string;
-  customerName: string;
-  customerAddress: string;
-  items: InvoiceItem[];
-  status: 'pending' | 'paid' | 'overdue';
-}
-
 export const invoiceBlock = new Block<'invoice', Metadata>({
   kind: 'invoice',
   description: 'Useful for working with invoices',

@@ -73,7 +73,7 @@ export async function POST(request: Request) {
         experimental_transform: smoothStream({ chunking: 'word' }),
         experimental_generateMessageId: generateUUID,
         tools: {
-          createDocument: createDocument({ session, dataStream }),
+          createDocument: createDocument({ session, dataStream, chatId: id }),
           updateDocument: updateDocument({ session, dataStream }),
         },
         onFinish: async ({ response, reasoning }) => {
