@@ -110,6 +110,7 @@ export const vendor = sqliteTable('Vendor', {
   id: text('id').primaryKey().notNull(),
   name: text('name').notNull(),
   description: text('description'),
+  address: text('address').notNull(),
   createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
 });
 
@@ -123,9 +124,11 @@ export const invoice = sqliteTable('Invoice', {
     .references(() => vendor.id),
   invoiceNumber: text('invoiceNumber').notNull(),
   customerName: text('customerName').notNull(),
+  customerAddress: text('customerAddress').notNull(),
   invoiceDate: integer('invoiceDate', { mode: 'timestamp' }).notNull(),
   dueDate: integer('dueDate', { mode: 'timestamp' }).notNull(),
   totalAmount: real('totalAmount').notNull(),
+  currency: text('currency').notNull().default('USD'),
   status: text('status')
     .notNull()
     .default('pending')
