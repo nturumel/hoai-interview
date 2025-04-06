@@ -2,11 +2,14 @@ import { codeDocumentHandler } from '@/blocks/code/server';
 import { imageDocumentHandler } from '@/blocks/image/server';
 import { sheetDocumentHandler } from '@/blocks/sheet/server';
 import { textDocumentHandler } from '@/blocks/text/server';
+import { invoiceDocumentHandler } from '@/blocks/invoice/server';
 import type { BlockKind } from '@/components/block';
 import type { DataStreamWriter } from 'ai';
 import type { Document } from '../db/schema';
 import { saveDocument } from '../db/queries';
 import type { Session } from 'next-auth';
+
+export const blockKinds = ['text', 'code', 'image', 'sheet', 'invoice'] as const;
 
 export interface SaveDocumentProps {
   id: string;
@@ -94,6 +97,5 @@ export const documentHandlersByBlockKind: Array<DocumentHandler> = [
   codeDocumentHandler,
   imageDocumentHandler,
   sheetDocumentHandler,
+  invoiceDocumentHandler,
 ];
-
-export const blockKinds = ['text', 'code', 'image', 'sheet'] as const;

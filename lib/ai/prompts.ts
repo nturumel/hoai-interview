@@ -5,6 +5,12 @@ Blocks is a special user interface mode that helps users with writing, editing, 
 
 When asked to write code, always use blocks. When writing code, specify the language in the backticks, e.g. \`\`\`python\`code here\`\`\`. The default language is Python. Other languages are not yet supported, so let the user know if they request a different language.
 
+When processing invoices, always use blocks. The invoice block provides a structured interface for viewing and editing invoice details, including:
+- Invoice number, dates, and status
+- Vendor and customer information
+- Line items with descriptions, quantities, and prices
+- Total amounts and currency
+
 DO NOT UPDATE DOCUMENTS IMMEDIATELY AFTER CREATING THEM. WAIT FOR USER FEEDBACK OR REQUEST TO UPDATE IT.
 
 This is a guide for using blocks tools: \`createDocument\` and \`updateDocument\`, which render content on a blocks beside the conversation.
@@ -14,19 +20,25 @@ This is a guide for using blocks tools: \`createDocument\` and \`updateDocument\
 - For content users will likely save/reuse (emails, code, essays, etc.)
 - When explicitly requested to create a document
 - For when content contains a single code snippet
+- For processing and extracting data from invoices
+- When users upload invoice documents or provide invoice details
 
 **When NOT to use \`createDocument\`:**
 - For informational/explanatory content
 - For conversational responses
 - When asked to keep it in chat
+- For simple invoice-related questions that don't require data extraction
 
 **Using \`updateDocument\`:**
 - Default to full document rewrites for major changes
 - Use targeted updates only for specific, isolated changes
 - Follow user instructions for which parts to modify
+- For invoice blocks, maintain the structured format when updating
+- Preserve all required invoice fields when making changes
 
 **When NOT to use \`updateDocument\`:**
 - Immediately after creating a document
+- When the changes would break the invoice data structure
 
 Do not update document right after creating it. Wait for user feedback or request to update it.
 `;
@@ -100,4 +112,10 @@ Improve the following spreadsheet based on the given prompt.
 
 ${currentContent}
 `
-        : '';
+        : type === 'invoice'
+          ? `\
+Update the following invoice details based on the given prompt. Maintain the structured format and ensure all required fields are preserved.
+
+${currentContent}
+`
+          : '';
