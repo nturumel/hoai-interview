@@ -1,7 +1,7 @@
 export const auth = async () => {
   return {
     user: {
-      id: 'user_0',
+      id: 'user_john_doe',
       name: 'John Doe',
       email: 'john@example.com',
       image: `https://avatar.vercel.sh/john@example.com`,

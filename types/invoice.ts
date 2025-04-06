@@ -63,12 +63,14 @@ export interface InvoiceModel {
   vendorId: string;
   invoiceNumber: string;
   customerName: string;
-  invoiceDate: number; // timestamp
-  dueDate: number; // timestamp
+  customerAddress: string;
+  currency: string;
+  invoiceDate: Date; // timestamp
+  dueDate: Date; // timestamp
   totalAmount: number;
   status: InvoiceStatus;
-  createdAt: number; // timestamp
-  updatedAt: number; // timestamp
+  createdAt: Date; // timestamp
+  updatedAt: Date; // timestamp
   lastEditedBy?: string;
 }
 
@@ -82,8 +84,10 @@ export function invoiceToModel(invoice: Invoice): Omit<InvoiceModel, 'id' | 'cre
     vendorId: invoice.vendorId,
     invoiceNumber: invoice.invoiceNumber,
     customerName: invoice.customerName,
-    invoiceDate: new Date(invoice.date).getTime(),
-    dueDate: new Date(invoice.dueDate).getTime(),
+    customerAddress: invoice.customerAddress,
+    currency: invoice.currency,
+    invoiceDate: new Date(invoice.date),
+    dueDate: new Date(invoice.dueDate),
     totalAmount: invoice.totalAmount,
     status: invoice.status,
     lastEditedBy: invoice.lastEditedBy,
@@ -94,19 +98,19 @@ export function modelToInvoice(model: InvoiceModel, vendor: { name: string; addr
   return {
     id: model.id,
     invoiceNumber: model.invoiceNumber,
-    date: new Date(model.invoiceDate).toISOString(),
-    dueDate: new Date(model.dueDate).toISOString(),
+    date: model.invoiceDate.toISOString(),
+    dueDate: model.dueDate.toISOString(),
     totalAmount: model.totalAmount,
-    currency: 'USD', // TODO: Add currency to database model
+    currency: model.currency,
     vendorId: model.vendorId,
     vendorName: vendor.name,
     vendorAddress: vendor.address,
     customerName: model.customerName,
-    customerAddress: '', // TODO: Add customer address to database model
+    customerAddress: model.customerAddress,
     items,
     status: model.status,
-    createdAt: new Date(model.createdAt),
-    updatedAt: new Date(model.updatedAt),
+    createdAt: model.createdAt,
+    updatedAt: model.updatedAt,
     lastEditedBy: model.lastEditedBy,
   };
 } 

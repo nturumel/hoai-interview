@@ -21,6 +21,7 @@ import { useBlock } from '@/hooks/use-block';
 import equal from 'fast-deep-equal';
 import { SpreadsheetEditor } from './sheet-editor';
 import { ImageEditor } from './image-editor';
+import { InvoiceEditor } from '@/components/invoice-editor';
 
 interface DocumentPreviewProps {
   isReadonly: boolean;
@@ -264,7 +265,13 @@ const DocumentContent = ({ document }: { document: Document }) => {
             <SpreadsheetEditor {...commonProps} />
           </div>
         </div>
-      ) : document.kind === 'image' ? (
+      ) : document.kind === 'invoice' ? (
+        <div className="flex flex-1 relative size-full p-4">
+          <div className="absolute inset-0">
+            <InvoiceEditor {...commonProps} />
+          </div>
+        </div>):
+        document.kind === 'image' ? (
         <ImageEditor
           title={document.title}
           content={document.content ?? ''}

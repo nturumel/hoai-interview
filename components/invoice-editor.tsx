@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Invoice, InvoiceItem } from '@/types/invoice';
+import { toast } from 'sonner';
 
 interface InvoiceEditorProps {
   content: string;
@@ -18,18 +19,71 @@ export function InvoiceEditor({
   status,
 }: InvoiceEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState<Invoice>(() => JSON.parse(content));
+  const [editedData, setEditedData] = useState<Invoice>(() => JSON.parse(content || '{}'));
   const [tempInputs, setTempInputs] = useState<{ [key: string]: string }>({});
+  const [error, setError] = useState<string | null>(null);
+
+  const validateInvoice = (invoice: Invoice): string | null => {
+    if (!invoice.vendorId) {
+      return 'Vendor ID is required';
+    }
+    if (!invoice.invoiceNumber) {
+      return 'Invoice number is required';
+    }
+    if (!invoice.customerName) {
+      return 'Customer name is required';
+    }
+    if (!invoice.customerAddress) {
+      return 'Customer address is required';
+    }
+    if (!invoice.items.length) {
+      return 'At least one line item is required';
+    }
+    if (invoice.items.some(item => !item.description || item.quantity <= 0 || item.unitPrice <= 0)) {
+      return 'All line items must have a description, positive quantity, and positive unit price';
+    }
+    return null;
+  };
+
+  const handleContentSave = () => {
+    saveContent(JSON.stringify(editedData));
+  };
+
+  const handleDatabaseSave = async () => {
+    const validationError = validateInvoice(editedData);
+    if (validationError) {
+      setError(validationError);
+      toast.error(validationError);
+      return;
+    }
+
+    try {
+      // TODO: Implement database save
+      setIsEditing(false);
+      setError(null);
+      toast.success('Invoice saved successfully');
+    } catch (err) {
+      const error = err as Error;
+      if (error.message.includes('UNIQUE constraint failed')) {
+        setError('An invoice with this number and amount already exists for this vendor');
+        toast.error('Duplicate invoice detected');
+      } else {
+        setError(`Failed to save invoice: ${error.message}`);
+        toast.error('Failed to save invoice');
+      }
+    }
+  };
 
   const handleSave = () => {
-    saveContent(JSON.stringify(editedData));
-    setIsEditing(false);
+    handleContentSave();
+    handleDatabaseSave();
   };
 
   const handleCancel = () => {
     setEditedData(JSON.parse(content));
     setTempInputs({});
     setIsEditing(false);
+    setError(null);
   };
 
   const updateItem = (index: number, field: keyof InvoiceItem, value: string | number) => {
@@ -87,6 +141,12 @@ export function InvoiceEditor({
 
   return (
     <div className="invoice-container">
+      {error && (
+        <div className="mb-4 p-4 rounded-lg status-error">
+          {error}
+        </div>
+      )}
+      
       <div className="flex justify-between items-start">
         <div>
           <h2 className="text-2xl font-bold">
@@ -98,6 +158,7 @@ export function InvoiceEditor({
                 className="invoice-input"
                 aria-label="Invoice Number"
                 placeholder="Enter invoice number"
+                required
               />
             ) : (
               `Invoice #${editedData.invoiceNumber}`
@@ -112,6 +173,7 @@ export function InvoiceEditor({
                   onChange={(e) => setEditedData(prev => ({ ...prev, date: new Date(e.target.value).toISOString() }))}
                   className="invoice-input"
                   aria-label="Invoice Date"
+                  required
                 />
               ) : (
                 formatDate(new Date(editedData.date))
@@ -125,6 +187,7 @@ export function InvoiceEditor({
                   onChange={(e) => setEditedData(prev => ({ ...prev, dueDate: new Date(e.target.value).toISOString() }))}
                   className="invoice-input"
                   aria-label="Due Date"
+                  required
                 />
               ) : (
                 formatDate(new Date(editedData.dueDate))
@@ -146,6 +209,7 @@ export function InvoiceEditor({
                 onChange={(e) => setEditedData(prev => ({ ...prev, status: e.target.value as typeof editedData.status }))}
                 className="invoice-input"
                 aria-label="Invoice Status"
+                required
               >
                 <option value="pending">Pending</option>
                 <option value="paid">Paid</option>
@@ -170,6 +234,7 @@ export function InvoiceEditor({
                 className="invoice-input w-full mb-2"
                 aria-label="Vendor Name"
                 placeholder="Enter vendor name"
+                required
               />
               <textarea
                 value={editedData.vendorAddress}
@@ -178,6 +243,7 @@ export function InvoiceEditor({
                 rows={2}
                 aria-label="Vendor Address"
                 placeholder="Enter vendor address"
+                required
               />
             </>
           ) : (
@@ -198,6 +264,7 @@ export function InvoiceEditor({
                 className="invoice-input w-full mb-2"
                 aria-label="Customer Name"
                 placeholder="Enter customer name"
+                required
               />
               <textarea
                 value={editedData.customerAddress}
@@ -206,6 +273,7 @@ export function InvoiceEditor({
                 rows={2}
                 aria-label="Customer Address"
                 placeholder="Enter customer address"
+                required
               />
             </>
           ) : (
@@ -239,6 +307,7 @@ export function InvoiceEditor({
                       className="invoice-input w-full"
                       aria-label={`Item ${index + 1} Description`}
                       placeholder="Enter item description"
+                      required
                     />
                   ) : (
                     item.description
@@ -257,6 +326,7 @@ export function InvoiceEditor({
                       step="1"
                       aria-label={`Item ${index + 1} Quantity`}
                       placeholder="Qty"
+                      required
                     />
                   ) : (
                     item.quantity
@@ -275,6 +345,7 @@ export function InvoiceEditor({
                       step="1.00"
                       aria-label={`Item ${index + 1} Unit Price`}
                       placeholder="Price"
+                      required
                     />
                   ) : (
                     formatCurrency(item.unitPrice, editedData.currency)
@@ -306,6 +377,7 @@ export function InvoiceEditor({
               type="button"
               onClick={handleCancel}
               className="invoice-button-secondary"
+              disabled={status === 'saving'}
             >
               Cancel
             </button>
@@ -319,13 +391,23 @@ export function InvoiceEditor({
             </button>
           </>
         ) : (
-          <button
-            type="button"
-            onClick={() => setIsEditing(true)}
-            className="invoice-button-primary"
-          >
-            Edit Invoice
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="invoice-button-primary"
+            >
+              Edit Invoice
+            </button>
+            <button
+              type="button"
+              onClick={handleContentSave}
+              className="invoice-button-primary"
+              disabled={status === 'saving'}
+            >
+              {status === 'saving' ? 'Saving...' : 'Save Current Version'}
+            </button>
+          </>
         )}
       </div>
     </div>
