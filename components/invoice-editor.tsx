@@ -69,7 +69,7 @@ export function InvoiceEditor({
   };
 
   return (
-    <div className="space-y-6 p-4 bg-white rounded-lg shadow">
+    <div className="space-y-6 p-4 bg-card dark:bg-card text-card-foreground dark:text-card-foreground rounded-lg shadow">
       <div className="flex justify-between items-start">
         <div>
           <h2 className="text-2xl font-bold">
@@ -78,7 +78,7 @@ export function InvoiceEditor({
                 type="text"
                 value={editedData.invoiceNumber}
                 onChange={(e) => setEditedData(prev => ({ ...prev, invoiceNumber: e.target.value }))}
-                className="border rounded px-2 py-1"
+                className="border border-input dark:border-input rounded px-2 py-1 bg-background dark:bg-background text-foreground dark:text-foreground"
                 aria-label="Invoice Number"
                 placeholder="Enter invoice number"
               />
@@ -93,7 +93,7 @@ export function InvoiceEditor({
                   type="date"
                   value={editedData.date.split('T')[0]}
                   onChange={(e) => setEditedData(prev => ({ ...prev, date: new Date(e.target.value).toISOString() }))}
-                  className="border rounded px-2 py-1"
+                  className="border border-input dark:border-input rounded px-2 py-1 bg-background dark:bg-background text-foreground dark:text-foreground"
                   aria-label="Invoice Date"
                 />
               ) : (
@@ -106,7 +106,7 @@ export function InvoiceEditor({
                   type="date"
                   value={editedData.dueDate.split('T')[0]}
                   onChange={(e) => setEditedData(prev => ({ ...prev, dueDate: new Date(e.target.value).toISOString() }))}
-                  className="border rounded px-2 py-1"
+                  className="border border-input dark:border-input rounded px-2 py-1 bg-background dark:bg-background text-foreground dark:text-foreground"
                   aria-label="Due Date"
                 />
               ) : (
@@ -117,9 +117,9 @@ export function InvoiceEditor({
         </div>
         <div className="text-right">
           <span className={`px-2 py-1 rounded text-sm font-medium ${
-            editedData.status === 'paid' ? 'bg-green-100 text-green-800' :
-            editedData.status === 'overdue' ? 'bg-red-100 text-red-800' :
-            'bg-yellow-100 text-yellow-800'
+            editedData.status === 'paid' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+            editedData.status === 'overdue' ? 'bg-destructive/10 dark:bg-destructive/20 text-destructive dark:text-destructive-foreground' :
+            'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
           }`}>
             {isEditing ? (
               <select
@@ -148,14 +148,14 @@ export function InvoiceEditor({
                 type="text"
                 value={editedData.vendorName}
                 onChange={(e) => setEditedData(prev => ({ ...prev, vendorName: e.target.value }))}
-                className="border rounded px-2 py-1 w-full mb-2"
+                className="border border-input dark:border-input rounded px-2 py-1 w-full mb-2 bg-background dark:bg-background text-foreground dark:text-foreground"
                 aria-label="Vendor Name"
                 placeholder="Enter vendor name"
               />
               <textarea
                 value={editedData.vendorAddress}
                 onChange={(e) => setEditedData(prev => ({ ...prev, vendorAddress: e.target.value }))}
-                className="border rounded px-2 py-1 w-full"
+                className="border border-input dark:border-input rounded px-2 py-1 w-full bg-background dark:bg-background text-foreground dark:text-foreground"
                 rows={2}
                 aria-label="Vendor Address"
                 placeholder="Enter vendor address"
@@ -176,14 +176,14 @@ export function InvoiceEditor({
                 type="text"
                 value={editedData.customerName}
                 onChange={(e) => setEditedData(prev => ({ ...prev, customerName: e.target.value }))}
-                className="border rounded px-2 py-1 w-full mb-2"
+                className="border border-input dark:border-input rounded px-2 py-1 w-full mb-2 bg-background dark:bg-background text-foreground dark:text-foreground"
                 aria-label="Customer Name"
                 placeholder="Enter customer name"
               />
               <textarea
                 value={editedData.customerAddress}
                 onChange={(e) => setEditedData(prev => ({ ...prev, customerAddress: e.target.value }))}
-                className="border rounded px-2 py-1 w-full"
+                className="border border-input dark:border-input rounded px-2 py-1 w-full bg-background dark:bg-background text-foreground dark:text-foreground"
                 rows={2}
                 aria-label="Customer Address"
                 placeholder="Enter customer address"
@@ -217,7 +217,7 @@ export function InvoiceEditor({
                       type="text"
                       value={item.description}
                       onChange={(e) => updateItem(index, 'description', e.target.value)}
-                      className="border rounded px-2 py-1 w-full"
+                      className="border border-input dark:border-input rounded px-2 py-1 w-full bg-background dark:bg-background text-foreground dark:text-foreground"
                       aria-label={`Item ${index + 1} Description`}
                       placeholder="Enter item description"
                     />
@@ -231,7 +231,7 @@ export function InvoiceEditor({
                       type="number"
                       value={item.quantity}
                       onChange={(e) => updateItem(index, 'quantity', Number(e.target.value))}
-                      className="border rounded px-2 py-1 w-20 text-right"
+                      className="border border-input dark:border-input rounded px-2 py-1 w-20 text-right bg-background dark:bg-background text-foreground dark:text-foreground"
                       min="0"
                       step="1"
                       aria-label={`Item ${index + 1} Quantity`}
@@ -247,7 +247,7 @@ export function InvoiceEditor({
                       type="number"
                       value={item.unitPrice}
                       onChange={(e) => updateItem(index, 'unitPrice', Number(e.target.value))}
-                      className="border rounded px-2 py-1 w-24 text-right"
+                      className="border border-input dark:border-input rounded px-2 py-1 w-24 text-right bg-background dark:bg-background text-foreground dark:text-foreground"
                       min="0"
                       step="0.01"
                       aria-label={`Item ${index + 1} Unit Price`}
@@ -282,14 +282,14 @@ export function InvoiceEditor({
             <button
               type="button"
               onClick={handleCancel}
-              className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-800"
+              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+              className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded hover:bg-primary/90"
               disabled={status === 'saving'}
             >
               {status === 'saving' ? 'Saving...' : 'Save Changes'}
@@ -299,7 +299,7 @@ export function InvoiceEditor({
           <button
             type="button"
             onClick={() => setIsEditing(true)}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+            className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded hover:bg-primary/90"
           >
             Edit Invoice
           </button>
