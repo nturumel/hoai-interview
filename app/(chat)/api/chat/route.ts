@@ -24,7 +24,6 @@ import { generateTitleFromUserMessage } from '../../actions';
 import { createDocument } from '@/lib/ai/tools/create-document';
 import { updateDocument } from '@/lib/ai/tools/update-document';
 import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
-import { getWeather } from '@/lib/ai/tools/get-weather';
 
 export const maxDuration = 60;
 
@@ -70,18 +69,12 @@ export async function POST(request: Request) {
           [
             'createDocument',
             'updateDocument',
-            'requestSuggestions',
           ],
         experimental_transform: smoothStream({ chunking: 'word' }),
         experimental_generateMessageId: generateUUID,
         tools: {
-          getWeather,
           createDocument: createDocument({ session, dataStream }),
           updateDocument: updateDocument({ session, dataStream }),
-          requestSuggestions: requestSuggestions({
-            session,
-            dataStream,
-          }),
         },
         onFinish: async ({ response, reasoning }) => {
           if (session.user?.id) {

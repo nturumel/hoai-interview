@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/app/(auth)/auth';
+import { storageService } from '@/lib/storage';
 
 // Use Blob instead of File since File is not available in Node.js environment
 const FileSchema = z.object({
@@ -50,22 +51,23 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(fileBuffer);
 
     try {
-      // Generate unique filename with timestamp
-      const timestamp = Date.now();
-      const uniqueFilename = `${timestamp}-${filename}`;
-
-      // Create data URL for immediate preview
-      const dataURL = `data:${file.type};base64,${buffer.toString('base64')}`;
+      const { url, pathname } = await storageService.upload(
+        buffer,
+        filename,
+        file.type
+      );
 
       return NextResponse.json({
-        url: dataURL,
-        pathname: `/uploads/${uniqueFilename}`,
+        url,
+        pathname,
         contentType: file.type,
       });
     } catch (error) {
+      console.error('Upload failed:', error);
       return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
     }
   } catch (error) {
+    console.error('Failed to process request:', error);
     return NextResponse.json(
       { error: 'Failed to process request' },
       { status: 500 },

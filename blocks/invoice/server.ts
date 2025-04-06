@@ -1,5 +1,5 @@
 import { myProvider } from '@/lib/ai/models';
-import { updateDocumentPrompt } from '@/lib/ai/prompts';
+import { invoicePrompt, updateDocumentPrompt } from '@/lib/ai/prompts';
 import { createDocumentHandler } from '@/lib/blocks/server';
 import { streamObject } from 'ai';
 import { z } from 'zod';
@@ -29,11 +29,11 @@ export const invoiceDocumentHandler = createDocumentHandler<'invoice'>({
     let draftContent = '';
 
     const { fullStream } = streamObject({
-      model: myProvider.languageModel('block-model'),
-      system: `You are an invoice processing assistant. Extract invoice details from the given text and return them in a structured format.`,
+      model: myProvider.languageModel('openai-multimodal-model'),
+      system: invoicePrompt,
       prompt: title,
       schema: z.object({
-        invoice: invoiceSchema,
+        invoice: invoiceSchema.describe('Invoice details'),
       }),
     });
 
@@ -67,11 +67,11 @@ export const invoiceDocumentHandler = createDocumentHandler<'invoice'>({
     let draftContent = '';
 
     const { fullStream } = streamObject({
-      model: myProvider.languageModel('block-model'),
+      model: myProvider.languageModel('openai-multimodal-model'),
       system: updateDocumentPrompt(document.content, 'invoice'),
       prompt: description,
       schema: z.object({
-        invoice: invoiceSchema,
+        invoice: invoiceSchema.describe('Invoice details'),
       }),
     });
 
