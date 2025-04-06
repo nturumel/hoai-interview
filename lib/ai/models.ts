@@ -9,6 +9,8 @@ export const myProvider = customProvider({
     // Multimodal models
     'openai-multimodal-model': openai('gpt-4o'),
     'claude-multimodal-model': anthropic('claude-3-sonnet-20240229'),
+    'title-model': openai('gpt-4-turbo'),
+    'block-model': openai('gpt-4o-mini'),
   },
 });
 

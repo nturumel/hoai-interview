@@ -1,6 +1,6 @@
 import type { Attachment } from 'ai';
 
-import { LoaderIcon } from './icons';
+import { LoaderIcon, FileIcon } from './icons';
 
 export const PreviewAttachment = ({
   attachment,
@@ -24,6 +24,11 @@ export const PreviewAttachment = ({
               alt={name ?? 'An image attachment'}
               className="rounded-md size-full object-cover"
             />
+          ) : contentType === 'application/pdf' ? (
+            <div className="flex flex-col items-center justify-center gap-1">
+              <FileIcon size={24} />
+              <span className="text-xs text-zinc-500">PDF</span>
+            </div>
           ) : (
             <div className="" />
           )
