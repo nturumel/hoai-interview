@@ -30,6 +30,8 @@ export const message = sqliteTable('Message', {
   role: text('role').notNull(),
   content: blob('content', { mode: 'json' }).notNull(),
   createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+  experimental_attachments: blob('experimental_attachments', { mode: 'json' }).default('[]'),
+  parts: blob('parts', { mode: 'json' }).default('[]'),
 });
 
 export type Message = InferSelectModel<typeof message>;
