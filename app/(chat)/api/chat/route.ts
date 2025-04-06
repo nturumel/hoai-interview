@@ -120,7 +120,7 @@ export async function POST(request: Request) {
         sendReasoning: true,
       });
     },
-    onError: (error: Error) => {
+    onError: (error: unknown) => {
       console.error('Error in chat', error);
       return 'Oops, an error occured!';
     },
