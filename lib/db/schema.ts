@@ -3,8 +3,10 @@ import {
   text,
   integer,
   blob,
+  real,
   foreignKey,
   primaryKey,
+  uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
 import type { InferSelectModel } from 'drizzle-orm';
 
@@ -99,3 +101,76 @@ export const suggestion = sqliteTable(
 );
 
 export type Suggestion = InferSelectModel<typeof suggestion>;
+
+// Vendors table to normalize vendor data
+export const vendor = sqliteTable('Vendor', {
+  id: text('id').primaryKey().notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+});
+
+export type Vendor = InferSelectModel<typeof vendor>;
+
+// Main invoice table
+export const invoice = sqliteTable('Invoice', {
+  id: text('id').primaryKey().notNull(),
+  vendorId: text('vendorId')
+    .notNull()
+    .references(() => vendor.id),
+  invoiceNumber: text('invoiceNumber').notNull(),
+  customerName: text('customerName').notNull(),
+  invoiceDate: integer('invoiceDate', { mode: 'timestamp' }).notNull(),
+  dueDate: integer('dueDate', { mode: 'timestamp' }).notNull(),
+  totalAmount: real('totalAmount').notNull(),
+  status: text('status')
+    .notNull()
+    .default('pending')
+    .$type<'pending' | 'paid' | 'overdue'>(),
+  createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull(),
+  lastEditedBy: text('lastEditedBy'),
+}, (table) => {
+  return {
+    // This ensures no duplicate invoices from the same vendor
+    vendorInvoiceIdx: uniqueIndex('vendor_invoice_idx').on(
+      table.vendorId,
+      table.invoiceNumber,
+      table.totalAmount
+    ),
+  };
+});
+export type Invoice = InferSelectModel<typeof invoice>;
+
+// Line items for each invoice
+export const lineItem = sqliteTable('LineItem', {
+  id: text('id').primaryKey().notNull(),
+  invoiceId: text('invoiceId')
+    .notNull()
+    .references(() => invoice.id),
+  description: text('description').notNull(),
+  quantity: real('quantity').notNull(),
+  unitPrice: real('unitPrice').notNull(),
+  amount: real('amount').notNull(),
+  createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull(),
+});
+
+export type LineItem = InferSelectModel<typeof lineItem>;
+
+// Simple table to track processed documents
+export const processedDocument = sqliteTable('ProcessedDocument', {
+  id: text('id').primaryKey().notNull(),
+  invoiceId: text('invoiceId')
+    .notNull()
+    .references(() => invoice.id),
+  documentUrl: text('documentUrl').notNull(),
+  documentHash: text('documentHash').notNull(), // Store file hash to prevent duplicate uploads
+  uploadedAt: integer('uploadedAt', { mode: 'timestamp' }).notNull(),
+}, (table) => {
+  return {
+    // Prevent duplicate file uploads
+    documentHashIdx: uniqueIndex('document_hash_idx').on(table.documentHash),
+  };
+});
+
