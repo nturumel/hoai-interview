@@ -22,7 +22,7 @@ export const invoiceDocumentHandler = createDocumentHandler<'invoice'>({
     let draftContent = '';
 
     const { fullStream } = streamObject({
-      model: myProvider.languageModel('openai-multimodal-model'),
+      model: myProvider.languageModel('block-model'),
       system: invoicePrompt,
       prompt: `Title: ${title}\n\n${formattedMessage}\n\nAttachments: ${attachments}`,
       schema: z.object({

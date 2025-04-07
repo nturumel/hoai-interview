@@ -50,6 +50,20 @@
       "when": 1743980389252,
       "tag": "0006_rainy_madame_masque",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1743990858271,
+      "tag": "0007_white_slyde",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1743990967306,
+      "tag": "0008_puzzling_lifeguard",
+      "breakpoints": true
     }
   ]
 }

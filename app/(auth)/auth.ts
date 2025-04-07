@@ -1,11 +1,17 @@
-export const auth = async () => {
+'use server';
+
+export async function auth() {
   return {
     user: {
-      id: 'user_john_doe',
-      name: 'John Doe',
-      email: 'john@example.com',
-      image: `https://avatar.vercel.sh/john@example.com`,
+      id: '1',
+      name: 'Test User',
+      email: 'test@example.com',
+      image: '/avatar.png',
     },
-    expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
+    expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   };
-};
+}
+
+export async function signOut({ redirectTo }: { redirectTo: string }) {
+  return { success: true };
+}

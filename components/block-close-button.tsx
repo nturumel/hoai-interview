@@ -17,7 +17,7 @@ function PureBlockCloseButton() {
                 ...currentBlock,
                 isVisible: false,
               }
-            : { ...initialBlockData, status: 'idle', content: currentBlock.content },
+            : { ...initialBlockData, status: 'idle'},
         );
       }}
     >

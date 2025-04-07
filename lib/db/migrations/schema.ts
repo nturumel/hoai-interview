@@ -80,7 +80,7 @@ export const suggestion = sqliteTable("Suggestion", {
 	originalText: text().notNull(),
 	suggestedText: text().notNull(),
 	description: text(),
-	isResolved: integer().default(false).notNull(),
+	isResolved: integer({ mode: 'boolean' }).default(false).notNull(),
 	createdAt: integer().notNull(),
 	userId: text().default("user_0").notNull(),
 },

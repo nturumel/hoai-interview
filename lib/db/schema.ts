@@ -93,6 +93,7 @@ export const suggestion = sqliteTable(
       .notNull()
       .default(false),
     createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+    userId: text('userId').notNull(), // TODO: Remove this default, for backwards compatibility
   },
   (table) => ({
     pk: primaryKey({ columns: [table.id] }),
