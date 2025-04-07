@@ -3,6 +3,7 @@ import { and, asc, desc, eq, gt, gte, inArray, or, ilike } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import { nanoid } from 'nanoid';
+import { generateUUID } from '@/lib/utils';
 
 import {
   chat,
@@ -15,10 +16,13 @@ import {
   invoice,
   lineItem,
   vendor,
+  attachment,
+  messageAttachment,
 } from './schema';
 import type { BlockKind } from '@/components/block';
 import type { Invoice, InvoiceItem } from '@/types/invoice';
 import { invoiceToModel } from '@/types/invoice';
+import type { Attachment } from 'ai';
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
@@ -85,9 +89,53 @@ export async function getChatById({ id }: { id: string }) {
   }
 }
 
-export async function saveMessages({ messages }: { messages: Array<Message> }) {
+export async function saveMessages({ 
+  messages, 
+  attachments 
+}: { 
+  messages: Array<Message>;
+  attachments?: Array<Attachment>;
+}) {
   try {
-    return await db.insert(message).values(messages);
+    // First save the messages
+    const savedMessages = await db.insert(message).values(
+      messages.map(msg => ({
+        id: msg.id,
+        chatId: msg.chatId,
+        role: msg.role,
+        content: msg.content,
+        createdAt: msg.createdAt,
+        parts: msg.parts || []
+      }))
+    );
+
+    // Then handle attachments if any
+    if (attachments?.length) {
+      // Generate UUIDs for attachments
+      const attachmentsWithIds = attachments.map(a => ({
+        ...a,
+        id: generateUUID()
+      }));
+
+      // Save attachments
+      await db.insert(attachment).values(
+        attachmentsWithIds.map(a => ({
+          id: a.id,
+          url: a.url,
+          uploadedAt: new Date()
+        }))
+      );
+
+      // Create message-attachment relationships
+      await db.insert(messageAttachment).values(
+        attachmentsWithIds.map(a => ({
+          messageId: messages[0].id, // Assuming all attachments belong to the first message
+          attachmentId: a.id
+        }))
+      );
+    }
+
+    return savedMessages;
   } catch (error) {
     console.error('Failed to save messages in database', error);
     throw error;
@@ -96,11 +144,39 @@ export async function saveMessages({ messages }: { messages: Array<Message> }) {
 
 export async function getMessagesByChatId({ id }: { id: string }) {
   try {
-    return await db
+    // Get messages
+    const messages = await db
       .select()
       .from(message)
       .where(eq(message.chatId, id))
       .orderBy(asc(message.createdAt));
+
+    // Get attachments for these messages
+    const messageIds = messages.map(m => m.id);
+    const attachments = await db
+      .select()
+      .from(attachment)
+      .innerJoin(
+        messageAttachment,
+        eq(attachment.id, messageAttachment.attachmentId)
+      )
+      .where(inArray(messageAttachment.messageId, messageIds));
+
+    // Group attachments by message
+    const attachmentsByMessage = attachments.reduce((acc, row) => {
+      const { Attachment, MessageAttachment } = row;
+      if (!acc[MessageAttachment.messageId]) {
+        acc[MessageAttachment.messageId] = [];
+      }
+      acc[MessageAttachment.messageId].push(Attachment);
+      return acc;
+    }, {} as Record<string, typeof attachments[0]['Attachment'][]>);
+
+    // Combine messages with their attachments
+    return messages.map(msg => ({
+      ...msg,
+      experimental_attachments: attachmentsByMessage[msg.id] || []
+    }));
   } catch (error) {
     console.error('Failed to get messages by chat id from database', error);
     throw error;

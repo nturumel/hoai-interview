@@ -55,8 +55,8 @@ export async function POST(request: Request) {
   }
 
   await saveMessages({
-    messages: [{ ...userMessage, createdAt: new Date(), chatId: id, experimental_attachments: userMessage.experimental_attachments, parts: userMessage.parts }],
-  });
+    messages: [{...userMessage, createdAt: new Date(), chatId: id, parts: userMessage.parts}], attachments: userMessage.experimental_attachments },
+  );
 
   return createDataStreamResponse({
     execute: (dataStream) => {

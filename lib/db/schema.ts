@@ -20,6 +20,26 @@ export const chat = sqliteTable('Chat', {
     .$type<'public' | 'private'>(),
 });
 
+export const attachment = sqliteTable('Attachment', {
+  id: text('id').primaryKey().notNull(),
+  url: text('url').notNull(),
+  uploadedAt: integer('uploadedAt', { mode: 'timestamp' }).notNull(),
+});
+export type Attachment = InferSelectModel<typeof attachment>;
+
+export const messageAttachment = sqliteTable('MessageAttachment', {
+  messageId: text('messageId')
+    .notNull()
+    .references(() => message.id),
+  attachmentId: text('attachmentId')
+    .notNull()
+    .references(() => attachment.id),
+}, (table) => {
+  return {
+    pk: primaryKey({ columns: [table.messageId, table.attachmentId] }),
+  };
+});
+
 export type Chat = InferSelectModel<typeof chat>;
 
 export const message = sqliteTable('Message', {
@@ -30,7 +50,6 @@ export const message = sqliteTable('Message', {
   role: text('role').notNull(),
   content: blob('content', { mode: 'json' }).notNull(),
   createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
-  experimental_attachments: blob('experimental_attachments', { mode: 'json' }).default('[]'),
   parts: blob('parts', { mode: 'json' }).default('[]'),
 });
 
@@ -164,20 +183,17 @@ export const lineItem = sqliteTable('LineItem', {
 });
 
 export type LineItem = InferSelectModel<typeof lineItem>;
-
-// Simple table to track processed documents
-export const processedDocument = sqliteTable('ProcessedDocument', {
-  id: text('id').primaryKey().notNull(),
+export const invoiceProcessedDocument = sqliteTable('InvoiceProcessedDocument', {
   invoiceId: text('invoiceId')
     .notNull()
     .references(() => invoice.id),
-  documentUrl: text('documentUrl').notNull(),
-  documentHash: text('documentHash').notNull(), // Store file hash to prevent duplicate uploads
-  uploadedAt: integer('uploadedAt', { mode: 'timestamp' }).notNull(),
+  processedDocumentId: text('processedDocumentId')
+    .notNull()
+    .references(() => attachment.id),
 }, (table) => {
   return {
-    // Prevent duplicate file uploads
-    documentHashIdx: uniqueIndex('document_hash_idx').on(table.documentHash),
+    pk: primaryKey({ columns: [table.invoiceId, table.processedDocumentId] }),
   };
 });
 
+export type InvoiceProcessedDocument = InferSelectModel<typeof invoiceProcessedDocument>;
