@@ -31,9 +31,17 @@ import { codeBlock } from '@/blocks/code/client';
 import { sheetBlock } from '@/blocks/sheet/client';
 import { textBlock } from '@/blocks/text/client';
 import { invoiceBlock } from '@/blocks/invoice/client';
+import { invoiceSearchBlock } from '@/blocks/invoice-search/client';
 import equal from 'fast-deep-equal';
 
-export const blockDefinitions = [textBlock, codeBlock, imageBlock, sheetBlock, invoiceBlock];
+export const blockDefinitions = [
+  textBlock,
+  codeBlock,
+  imageBlock,
+  sheetBlock,
+  invoiceBlock,
+  invoiceSearchBlock,
+];
 export type BlockKind = (typeof blockDefinitions)[number]['kind'];
 
 export interface UIBlock {

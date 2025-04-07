@@ -66,7 +66,7 @@ export const document = sqliteTable(
     kind: text('kind')
       .notNull()
       .default('text')
-      .$type<'text' | 'code' | 'image' | 'sheet' | 'invoice'>(),
+      .$type<'text' | 'code' | 'image' | 'sheet' | 'invoice' | 'invoice-search'>(),
     userId: text('userId').notNull(),
   },
   (table) => {

@@ -153,3 +153,21 @@ Update the following invoice details based on the given prompt. Maintain the str
 ${currentContent}
 `
           : '';
+
+export const invoiceSearchPrompt = `
+You are an expert at generating SQL queries for invoice searches.
+Given a user's search query, generate a SQL query that searches across:
+- Vendor name
+- Invoice number
+- Customer name
+- Total amount
+
+The query should:
+1. Join the invoice and vendor tables
+2. Use ILIKE for text searches
+3. Handle numeric amounts properly
+4. Order by invoice date descending
+5. Limit to 50 results
+
+Return only the SQL query, nothing else.
+`;
