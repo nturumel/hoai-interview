@@ -2,7 +2,7 @@ import { myProvider } from '@/lib/ai/models';
 import { invoicePrompt, updateDocumentPrompt } from '@/lib/ai/prompts';
 import { createDocumentHandler } from '@/lib/blocks/server';
 import { getMessagesByChatId } from '@/lib/db/queries';
-import { streamObject } from 'ai';
+import { generateObject, streamObject } from 'ai';
 import { z } from 'zod';
 import { invoiceSchema } from '@/types/invoice';
 
@@ -10,12 +10,12 @@ export const invoiceDocumentHandler = createDocumentHandler<'invoice'>({
   kind: 'invoice',
   onCreateDocument: async ({ title, dataStream, chatId, experimental_attachments }) => {
     // Get message from chatId
-    const message = await getMessagesByChatId({id: chatId});
+    const message = await getMessagesByChatId({ id: chatId });
     const formattedMessage = message.map((m) => `${m.role}: ${m.content}`).join('\n');
 
     // Format attachments
     const attachments = experimental_attachments?.map((a) => {
-      const { filename, type, content } = {...a};
+      const { filename, type, content } = { ...a };
       return `Filename: ${filename}\nType: ${type}\nContent: ${JSON.stringify(content)}`;
     }).join('\n');
 
@@ -57,9 +57,7 @@ export const invoiceDocumentHandler = createDocumentHandler<'invoice'>({
     return draftContent;
   },
   onUpdateDocument: async ({ document, description, dataStream }) => {
-    let draftContent = '';
-
-    const { fullStream } = streamObject({
+    const result = await generateObject({
       model: myProvider.languageModel('block-model'),
       system: updateDocumentPrompt(document.content, 'invoice'),
       prompt: description,
@@ -68,25 +66,18 @@ export const invoiceDocumentHandler = createDocumentHandler<'invoice'>({
       }),
     });
 
-    for await (const delta of fullStream) {
-      const { type } = delta;
+    const invoice = result.object?.invoice;
 
-      if (type === 'object') {
-        const { object } = delta;
-        const { invoice } = object;
+    if (invoice) {
+      const content = JSON.stringify(invoice);
+      dataStream.writeData({
+        type: 'invoice-delta',
+        content,
+      });
 
-        if (invoice) {
-          const content = JSON.stringify(invoice);
-          dataStream.writeData({
-            type: 'invoice-delta',
-            content,
-          });
-
-          draftContent = content;
-        }
-      }
+      return content;
     }
 
-    return draftContent;
+    return '';
   },
 }); 
