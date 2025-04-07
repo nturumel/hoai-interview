@@ -1,17 +1,16 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Invoice, InvoiceItem } from '@/types/invoice';
-import { toast } from 'sonner';
 
 interface InvoiceEditorProps {
   content: string;
   currentVersionIndex: number;
   isCurrentVersion: boolean;
-  saveContent: (content: string) => void;
+  saveContent: (content: string, isCurrentVersion: boolean) => void;
   status: 'idle' | 'streaming' | 'saving';
 }
 
-export function InvoiceEditor({
+function PureInvoiceEditor({
   content,
   currentVersionIndex,
   isCurrentVersion,
@@ -21,69 +20,11 @@ export function InvoiceEditor({
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<Invoice>(() => JSON.parse(content || '{}'));
   const [tempInputs, setTempInputs] = useState<{ [key: string]: string }>({});
-  const [error, setError] = useState<string | null>(null);
-
-  const validateInvoice = (invoice: Invoice): string | null => {
-    if (!invoice.vendorId) {
-      return 'Vendor ID is required';
-    }
-    if (!invoice.invoiceNumber) {
-      return 'Invoice number is required';
-    }
-    if (!invoice.customerName) {
-      return 'Customer name is required';
-    }
-    if (!invoice.customerAddress) {
-      return 'Customer address is required';
-    }
-    if (!invoice.items.length) {
-      return 'At least one line item is required';
-    }
-    if (invoice.items.some(item => !item.description || item.quantity <= 0 || item.unitPrice <= 0)) {
-      return 'All line items must have a description, positive quantity, and positive unit price';
-    }
-    return null;
-  };
-
-  const handleContentSave = () => {
-    saveContent(JSON.stringify(editedData));
-  };
-
-  const handleDatabaseSave = async () => {
-    const validationError = validateInvoice(editedData);
-    if (validationError) {
-      setError(validationError);
-      toast.error(validationError);
-      return;
-    }
-
-    try {
-      // TODO: Implement database save
-      setIsEditing(false);
-      setError(null);
-      toast.success('Invoice saved successfully');
-    } catch (err) {
-      const error = err as Error;
-      if (error.message.includes('UNIQUE constraint failed')) {
-        setError('An invoice with this number and amount already exists for this vendor');
-        toast.error('Duplicate invoice detected');
-      } else {
-        setError(`Failed to save invoice: ${error.message}`);
-        toast.error('Failed to save invoice');
-      }
-    }
-  };
-
-  const handleSave = () => {
-    handleContentSave();
-    handleDatabaseSave();
-  };
 
   const handleCancel = () => {
     setEditedData(JSON.parse(content));
     setTempInputs({});
     setIsEditing(false);
-    setError(null);
   };
 
   const updateItem = (index: number, field: keyof InvoiceItem, value: string | number) => {
@@ -96,11 +37,13 @@ export function InvoiceEditor({
           ? Number(value) * (field === 'quantity' ? newItems[index].unitPrice : newItems[index].quantity)
           : newItems[index].amount
       };
-      return {
+      const newData = {
         ...prev,
         items: newItems,
         totalAmount: newItems.reduce((sum, item) => sum + item.amount, 0)
       };
+      saveContent(JSON.stringify(newData), true);
+      return newData;
     });
   };
 
@@ -118,7 +61,6 @@ export function InvoiceEditor({
       if (!Number.isNaN(numValue)) {
         updateItem(index, field, numValue);
       }
-      // Clear the temporary input
       setTempInputs(prev => {
         const newInputs = { ...prev };
         delete newInputs[`${index}-${field}`];
@@ -141,12 +83,6 @@ export function InvoiceEditor({
 
   return (
     <div className="invoice-container">
-      {error && (
-        <div className="mb-4 p-4 rounded-lg status-error">
-          {error}
-        </div>
-      )}
-      
       <div className="flex justify-between items-start">
         <div>
           <h2 className="text-2xl font-bold">
@@ -383,33 +319,38 @@ export function InvoiceEditor({
             </button>
             <button
               type="button"
-              onClick={handleSave}
+              onClick={() => {
+                saveContent(JSON.stringify(editedData), true);
+                setIsEditing(false);
+              }}
               className="invoice-button-primary"
               disabled={status === 'saving'}
             >
-              {status === 'saving' ? 'Saving...' : 'Save Changes'}
+              {status === 'saving' ? 'Saving...' : 'Save'}
             </button>
           </>
         ) : (
-          <>
-            <button
-              type="button"
-              onClick={() => setIsEditing(true)}
-              className="invoice-button-primary"
-            >
-              Edit Invoice
-            </button>
-            <button
-              type="button"
-              onClick={handleContentSave}
-              className="invoice-button-primary"
-              disabled={status === 'saving'}
-            >
-              {status === 'saving' ? 'Saving...' : 'Save Current Version'}
-            </button>
-          </>
+          <button
+            type="button"
+            onClick={() => setIsEditing(true)}
+            className="invoice-button-primary"
+          >
+            Edit Invoice
+          </button>
         )}
       </div>
     </div>
   );
-} 
+}
+
+function areEqual(prevProps: InvoiceEditorProps, nextProps: InvoiceEditorProps) {
+  return (
+    prevProps.currentVersionIndex === nextProps.currentVersionIndex &&
+    prevProps.isCurrentVersion === nextProps.isCurrentVersion &&
+    !(prevProps.status === 'streaming' && nextProps.status === 'streaming') &&
+    prevProps.content === nextProps.content &&
+    prevProps.saveContent === nextProps.saveContent
+  );
+}
+
+export const InvoiceEditor = memo(PureInvoiceEditor, areEqual); 

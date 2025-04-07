@@ -16,7 +16,7 @@ export const invoiceBlock = new Block<'invoice', Metadata>({
   description: 'Useful for working with invoices',
   initialize: async () => {},
   onStreamPart: ({ setBlock, streamPart }) => {
-    if (streamPart.type === 'text-delta') {
+    if (streamPart.type === 'invoice-delta') {
       setBlock((draftBlock) => ({
         ...draftBlock,
         content: streamPart.content as string,
@@ -37,7 +37,7 @@ export const invoiceBlock = new Block<'invoice', Metadata>({
         content={content}
         currentVersionIndex={currentVersionIndex}
         isCurrentVersion={isCurrentVersion}
-        saveContent={(content) => onSaveContent(content, true)}
+        saveContent={onSaveContent}
         status={status}
       />
     );
