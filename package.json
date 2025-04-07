@@ -17,7 +17,7 @@
     "db:check": "drizzle-kit check",
     "db:up": "drizzle-kit up",
     "start-s3rver": "tsx scripts/start-s3rver.ts",
-     "dev-with-s3": "concurrently \"pnpm dev\" \"pnpm start-s3rver\""
+    "dev-with-s3": "concurrently \"pnpm dev\" \"pnpm start-s3rver\""
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.6",

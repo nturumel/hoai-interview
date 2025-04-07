@@ -44,6 +44,7 @@ export const invoiceBlock = new Block<'invoice', Metadata>({
 
     return (
       <InvoiceEditor
+        key={`invoice-${currentVersionIndex}`}
         content={content}
         currentVersionIndex={currentVersionIndex}
         isCurrentVersion={isCurrentVersion}
@@ -89,16 +90,6 @@ export const invoiceBlock = new Block<'invoice', Metadata>({
     },
   ],
   toolbar: [
-    {
-      description: 'Extract invoice details',
-      icon: <FileIcon />,
-      onClick: ({ appendMessage }) => {
-        appendMessage({
-          role: 'user',
-          content: 'Can you please extract the invoice details?',
-        });
-      },
-    },
     {
       description: 'Analyze invoice data',
       icon: <SparklesIcon />,

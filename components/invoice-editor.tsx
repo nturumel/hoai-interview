@@ -26,6 +26,18 @@ function PureInvoiceEditor({
   const [isDuplicate, setIsDuplicate] = useState(false);
 
   useEffect(() => {
+    // This should not be needed ideally, but the editor is not updating when the version changes
+    try {
+      const newData = JSON.parse(content);
+      setEditedData(newData);
+      setIsEditing(false);
+      setTempInputs({});
+    } catch (error) {
+      console.error('Error parsing invoice content:', error);
+    }
+  }, [content, currentVersionIndex]);
+
+  useEffect(() => {
     const checkForDuplicates = async () => {
       if (editedData.vendorName && editedData.invoiceNumber && editedData.totalAmount) {
         const duplicate = await checkInvoiceDuplicate(
@@ -46,6 +58,12 @@ function PureInvoiceEditor({
     setIsEditing(false);
   };
 
+  const handleContentChange = (newContent: string, debounce = true) => {
+    if (newContent !== content) {
+      saveContent(newContent, debounce);
+    }
+  };
+
   const updateItem = (index: number, field: keyof InvoiceItem, value: string | number) => {
     setEditedData(prev => {
       const newItems = [...prev.items];
@@ -61,7 +79,7 @@ function PureInvoiceEditor({
         items: newItems,
         totalAmount: newItems.reduce((sum, item) => sum + item.amount, 0)
       };
-      saveContent(JSON.stringify(newData), true);
+      handleContentChange(JSON.stringify(newData), true);
       return newData;
     });
   };
