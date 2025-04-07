@@ -396,3 +396,53 @@ export async function upsertInvoiceWithItems(
     throw error;
   }
 }
+
+export async function getOrCreateVendor(name: string, address: string) {
+  try {
+    // First try to find an existing vendor
+    const existingVendor = await db.select().from(vendor).where(eq(vendor.name, name)).limit(1);
+
+    if (existingVendor.length > 0) {
+      return existingVendor[0];
+    }
+
+    // If not found, create a new vendor
+    const newVendorId = nanoid();
+    await db.insert(vendor).values({
+      id: newVendorId,
+      name,
+      address,
+      createdAt: new Date(),
+    });
+
+    return {
+      id: newVendorId,
+      name,
+      address,
+      createdAt: new Date(),
+    };
+  } catch (error) {
+    console.error('Failed to get or create vendor:', error);
+    throw error;
+  }
+}
+
+export async function checkDuplicateInvoice(vendorId: string, invoiceNumber: string, totalAmount: number) {
+  try {
+    const existingInvoice = await db.select()
+      .from(invoice)
+      .where(
+        and(
+          eq(invoice.vendorId, vendorId),
+          eq(invoice.invoiceNumber, invoiceNumber),
+          eq(invoice.totalAmount, totalAmount)
+        )
+      )
+      .limit(1);
+
+    return existingInvoice.length > 0;
+  } catch (error) {
+    console.error('Failed to check for duplicate invoice:', error);
+    throw error;
+  }
+}

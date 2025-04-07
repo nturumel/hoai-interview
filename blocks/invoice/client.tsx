@@ -8,13 +8,18 @@ import {
 } from '@/components/icons';
 import { InvoiceEditor } from '@/components/invoice-editor';
 import { toast } from 'sonner';
+import { DocumentSkeleton } from '@/components/document-skeleton';
 
 type Metadata = any;
 
 export const invoiceBlock = new Block<'invoice', Metadata>({
   kind: 'invoice',
   description: 'Useful for working with invoices',
-  initialize: async () => {},
+  initialize: async ({ setMetadata }) => {
+    setMetadata({
+      outputs: [],
+    });
+  },
   onStreamPart: ({ setBlock, streamPart }) => {
     if (streamPart.type === 'invoice-delta') {
       setBlock((draftBlock) => ({
@@ -31,7 +36,12 @@ export const invoiceBlock = new Block<'invoice', Metadata>({
     isCurrentVersion,
     onSaveContent,
     status,
+    isLoading,
   }) => {
+    if (isLoading || !content) {
+      return <DocumentSkeleton blockKind="invoice" />;
+    }
+
     return (
       <InvoiceEditor
         content={content}

@@ -1,6 +1,9 @@
-import { useState, memo } from 'react';
+import { useState, memo, useEffect } from 'react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Invoice, InvoiceItem } from '@/types/invoice';
+import { upsertInvoice, checkInvoiceDuplicate } from '@/app/actions/invoice';
+import { toast } from 'sonner';
+import { Badge } from "@/components/ui/badge";
 
 interface InvoiceEditorProps {
   content: string;
@@ -18,8 +21,24 @@ function PureInvoiceEditor({
   status,
 }: InvoiceEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState<Invoice>(() => JSON.parse(content || '{}'));
+  const [editedData, setEditedData] = useState<Invoice>(() => JSON.parse(content));
   const [tempInputs, setTempInputs] = useState<{ [key: string]: string }>({});
+  const [isDuplicate, setIsDuplicate] = useState(false);
+
+  useEffect(() => {
+    const checkForDuplicates = async () => {
+      if (editedData.vendorName && editedData.invoiceNumber && editedData.totalAmount) {
+        const duplicate = await checkInvoiceDuplicate(
+          editedData.vendorName,
+          editedData.invoiceNumber,
+          editedData.totalAmount
+        );
+        setIsDuplicate(duplicate);
+      }
+    };
+
+    checkForDuplicates();
+  }, [editedData.vendorName, editedData.invoiceNumber, editedData.totalAmount]);
 
   const handleCancel = () => {
     setEditedData(JSON.parse(content));
@@ -100,6 +119,7 @@ function PureInvoiceEditor({
               `Invoice #${editedData.invoiceNumber}`
             )}
           </h2>
+          {editedData.id && <h3>{`Invoice ID: ${editedData.id}`}</h3>}
           <div className="flex gap-4">
             <p className="invoice-text-muted">
               Date: {isEditing ? (
@@ -338,7 +358,35 @@ function PureInvoiceEditor({
             Edit Invoice
           </button>
         )}
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              const result = await upsertInvoice(editedData);
+              if (result.success) {
+                toast.success('Invoice submitted successfully');
+              } else {
+                toast.error(result.error || 'Failed to submit invoice');
+                if (result.error?.includes('Duplicate invoice')) {
+                  setIsDuplicate(true);
+                }
+              }
+            } catch (error) {
+              console.error('Error submitting invoice:', error);
+              toast.error('An unexpected error occurred while submitting the invoice');
+            }
+          }}
+          className={`invoice-button-primary ${isDuplicate ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={status === 'saving' || isDuplicate}
+        >
+          {status === 'saving' ? 'Submitting...' : 'Submit Invoice'}
+        </button>
       </div>
+      {isDuplicate && (
+        <Badge variant="destructive" className="mt-2">
+          Duplicate invoice detected
+        </Badge>
+      )}
     </div>
   );
 }

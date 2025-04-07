@@ -60,7 +60,7 @@ export const invoiceDocumentHandler = createDocumentHandler<'invoice'>({
     let draftContent = '';
 
     const { fullStream } = streamObject({
-      model: myProvider.languageModel('openai-multimodal-model'),
+      model: myProvider.languageModel('block-model'),
       system: updateDocumentPrompt(document.content, 'invoice'),
       prompt: description,
       schema: z.object({
