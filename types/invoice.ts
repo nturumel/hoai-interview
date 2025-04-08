@@ -118,4 +118,41 @@ export function modelToInvoice(model: InvoiceModel, vendor: { name: string; addr
     lastEditedBy: model.lastEditedBy,
     attachmentIds: model.attachmentIds,
   };
-} 
+}
+
+export const FILTER_OPERATORS = ['equals', 'contains', 'greaterThan', 'lessThan', 'between'] as const;
+export type FilterOperator = typeof FILTER_OPERATORS[number];
+
+export const invoiceFilterSchema = z.object({
+  field: z.string(),
+  value: z.union([
+    z.string(),
+    z.number(),
+    z.date(),
+    z.object({
+      start: z.date().optional(),
+      end: z.date().optional(),
+    }),
+    z.object({
+      min: z.number().optional(),
+      max: z.number().optional(),
+    }),
+  ]),
+  operator: z.enum(FILTER_OPERATORS).optional(),
+});
+
+export const invoiceSortSchema = z.object({
+  field: z.string(),
+  direction: z.enum(['asc', 'desc']),
+});
+
+export type InvoiceFilter = z.infer<typeof invoiceFilterSchema>;
+export type InvoiceSort = z.infer<typeof invoiceSortSchema>; 
+
+export const searchFiltersSchema = z.object({
+  filters: z.array(invoiceFilterSchema),
+  sort: invoiceSortSchema.optional(),
+});
+
+// Search types
+export type InvoiceField = 'invoiceNumber' | 'customerName' | 'totalAmount' | 'invoiceDate' | 'status';

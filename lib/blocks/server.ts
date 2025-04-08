@@ -10,8 +10,9 @@ import { saveDocument } from '../db/queries';
 import type { Session } from 'next-auth';
 import type { z } from 'zod';
 import type { experimentalAttachmentsSchema } from '../ai/tools/create-document';
+import { invoiceSearchDocumentHandler } from '@/blocks/invoice-search/server';
 
-export const blockKinds = ['text', 'code', 'image', 'sheet', 'invoice'] as const;
+export const blockKinds = ['text', 'code', 'image', 'sheet', 'invoice', 'invoice-search'] as const;
 
 export interface SaveDocumentProps {
   id: string;
@@ -104,4 +105,5 @@ export const documentHandlersByBlockKind: Array<DocumentHandler> = [
   imageDocumentHandler,
   sheetDocumentHandler,
   invoiceDocumentHandler,
+  invoiceSearchDocumentHandler,
 ];

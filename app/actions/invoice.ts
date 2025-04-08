@@ -3,6 +3,9 @@
 import { upsertInvoiceWithItems, getOrCreateVendor, checkDuplicateInvoice } from '@/lib/db/queries';
 import { z } from 'zod';
 import { invoiceSchema } from '@/types/invoice';
+import { searchInvoices } from '@/lib/db/queries';
+import type { InvoiceFilter, InvoiceSort } from '@/types/invoice';
+
 
 // Schema for upserting a full invoice
 const upsertInvoiceSchema = invoiceSchema.extend({
@@ -52,4 +55,8 @@ export async function upsertInvoice(input: z.infer<typeof upsertInvoiceSchema>) 
     console.error('Failed to upsert invoice:', error);
     return { success: false, error: 'Failed to upsert invoice' };
   }
+} 
+
+export async function searchInvoicesAction(filters: InvoiceFilter[], sort?: InvoiceSort) {
+  return searchInvoices(filters, sort);
 } 

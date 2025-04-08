@@ -1,126 +1,54 @@
 import { myProvider } from '@/lib/ai/models';
 import { createDocumentHandler } from '@/lib/blocks/server';
-import { streamObject } from 'ai';
+import { getMessagesByChatId } from '@/lib/db/queries';
+import { generateObject } from 'ai';
 import { z } from 'zod';
-import { db } from '@/lib/db/queries';
-import { invoice, vendor } from '@/lib/db/schema';
-import { sql } from 'drizzle-orm';
-import { invoiceSearchPrompt } from '@/lib/ai/prompts';
+import {searchFiltersSchema } from '@/types/invoice';
+import { invoiceSearchPrompt, invoiceSearchUpdatePrompt } from '@/lib/ai/prompts';
+import type { DocumentHandler } from '@/lib/blocks/server';
 
-export const invoiceSearchDocumentHandler = createDocumentHandler<'invoice-search'>({
+export const invoiceSearchDocumentHandler: DocumentHandler<'invoice-search'> = createDocumentHandler<'invoice-search'>({
   kind: 'invoice-search',
-  onCreateDocument: async ({ title, dataStream }) => {
-    let draftContent = '';
+  onCreateDocument: async ({ title, dataStream, chatId }) => {
+    // Get messages from chat to understand the search context
+    const messages = await getMessagesByChatId({ id: chatId });
+    const formattedMessage = messages.map((m) => `${m.role}: ${m.content}`).join('\n');
 
-    const { fullStream } = streamObject({
+    // Generate search filters and sort from the message
+    const result = await generateObject({
       model: myProvider.languageModel('block-model'),
       system: invoiceSearchPrompt,
-      prompt: title,
-      schema: z.object({
-        searchTerm: z.string().describe('Search term to use in the query'),
-      }),
+      prompt: `User message: ${formattedMessage}\n\nGenerate appropriate search filters and sort criteria.`,
+      schema: searchFiltersSchema,
     });
 
-    for await (const delta of fullStream) {
-      const { type } = delta;
+    const content = JSON.stringify(result.object);
+    dataStream.writeData({
+      type: 'invoice-search-delta',
+      content,
+    });
 
-      if (type === 'object') {
-        const { object } = delta;
-        const { searchTerm } = object;
-
-        if (searchTerm) {
-          // Execute search query using raw SQL
-          const results = await db.all(sql`
-            SELECT 
-              i.id,
-              v.name as "vendorName",
-              i."invoiceNumber",
-              i."invoiceDate",
-              i."dueDate",
-              i."totalAmount",
-              i.status,
-              i.currency,
-              i."customerName",
-              i."customerAddress",
-              v.address as "vendorAddress"
-            FROM ${invoice} i
-            LEFT JOIN ${vendor} v ON i."vendorId" = v.id
-            WHERE 
-              v.name ILIKE ${`%${searchTerm}%`} OR
-              i."invoiceNumber" ILIKE ${`%${searchTerm}%`} OR
-              i."customerName" ILIKE ${`%${searchTerm}%`} OR
-              i."totalAmount" = ${Number.parseFloat(searchTerm) || 0}
-            ORDER BY i."invoiceDate" DESC
-            LIMIT 50
-          `);
-          
-          dataStream.writeData({
-            type: 'invoice-search-delta',
-            content: JSON.stringify(results),
-          });
-
-          draftContent = JSON.stringify(results);
-        }
-      }
-    }
-
-    return draftContent;
+    return content;
   },
-  onUpdateDocument: async ({ document, description, dataStream }) => {
-    let draftContent = '';
+  onUpdateDocument: async ({ document, description, dataStream, session }) => {
+    // Get messages from chat to understand the search context
+    const messages = await getMessagesByChatId({ id: document.id });
+    const formattedMessage = messages.map((m) => `${m.role}: ${m.content}`).join('\n');
 
-    const { fullStream } = streamObject({
+    // Generate search filters and sort from the message
+    const result = await generateObject({
       model: myProvider.languageModel('block-model'),
-      system: invoiceSearchPrompt,
-      prompt: description,
-      schema: z.object({
-        searchTerm: z.string().describe('Search term to use in the query'),
-      }),
+      system: invoiceSearchUpdatePrompt,
+      prompt: `User message: ${formattedMessage}\n\nUpdate the search filters and sort criteria.`,
+      schema: searchFiltersSchema,
     });
 
-    for await (const delta of fullStream) {
-      const { type } = delta;
+    const content = JSON.stringify(result.object);
+    dataStream.writeData({
+      type: 'invoice-search-delta',
+      content,
+    });
 
-      if (type === 'object') {
-        const { object } = delta;
-        const { searchTerm } = object;
-
-        if (searchTerm) {
-          // Execute search query using raw SQL
-          const results = await db.all(sql`
-            SELECT 
-              i.id,
-              v.name as "vendorName",
-              i."invoiceNumber",
-              i."invoiceDate",
-              i."dueDate",
-              i."totalAmount",
-              i.status,
-              i.currency,
-              i."customerName",
-              i."customerAddress",
-              v.address as "vendorAddress"
-            FROM ${invoice} i
-            LEFT JOIN ${vendor} v ON i."vendorId" = v.id
-            WHERE 
-              v.name ILIKE ${`%${searchTerm}%`} OR
-              i."invoiceNumber" ILIKE ${`%${searchTerm}%`} OR
-              i."customerName" ILIKE ${`%${searchTerm}%`} OR
-              i."totalAmount" = ${Number.parseFloat(searchTerm) || 0}
-            ORDER BY i."invoiceDate" DESC
-            LIMIT 50
-          `);
-          
-          dataStream.writeData({
-            type: 'invoice-search-delta',
-            content: JSON.stringify(results),
-          });
-
-          draftContent = JSON.stringify(results);
-        }
-      }
-    }
-
-    return draftContent;
+    return content;
   },
 }); 

@@ -98,30 +98,30 @@ You are an invoice processing assistant. When handling invoices:
    - Vendor details (name and address)
    - Customer details (name and address)
    - Line items with descriptions, quantities, unit prices, and amounts
-   - Total amount and currency
-   - Payment status (pending/paid/overdue)
+`;
 
-2. Follow these guidelines:
-   - Maintain consistent date formats (ISO 8601)
-   - Use proper currency formatting
-   - Calculate line item amounts (quantity × unit price)
-   - Sum up total amounts correctly
-   - Preserve all original information
-   - Handle missing fields gracefully with appropriate defaults
-   - Validate numerical values and dates
-   - Ensure all required fields are present
+export const invoiceSearchPrompt = `
+You are an invoice search assistant. Analyze the user's message and generate appropriate search filters and sort criteria.
+Available fields for filtering and sorting:
+- vendorName
+- invoiceNumber
+- customerName
+- status (pending/paid/overdue)
+- invoiceDate
+- dueDate
+- totalAmount
+- currency
 
-3. When updating invoices:
-   - Keep the structured JSON format
-   - Update only the requested fields
-   - Recalculate totals if quantities or prices change
-   - Maintain data integrity
-   - Preserve the original invoice structure
+For date ranges, use { start: Date, end: Date }
+For amount ranges, use { min: number, max: number }
+For text searches, use 'contains' operator
+For exact matches, use 'equals' operator
+For numeric comparisons, use 'greaterThan' or 'lessThan'
+For ranges, use 'between' operator
+`;
 
-4. For new invoices:
-   - Set appropriate default values
-   - Include all required fields
-   - Format all data consistently
+export const invoiceSearchUpdatePrompt = `
+Update the search filters and sort criteria based on the given prompt. Maintain the same structure and ensure all required fields are preserved.
 `;
 
 export const updateDocumentPrompt = (
@@ -153,21 +153,3 @@ Update the following invoice details based on the given prompt. Maintain the str
 ${currentContent}
 `
           : '';
-
-export const invoiceSearchPrompt = `
-You are an expert at generating SQL queries for invoice searches.
-Given a user's search query, generate a SQL query that searches across:
-- Vendor name
-- Invoice number
-- Customer name
-- Total amount
-
-The query should:
-1. Join the invoice and vendor tables
-2. Use ILIKE for text searches
-3. Handle numeric amounts properly
-4. Order by invoice date descending
-5. Limit to 50 results
-
-Return only the SQL query, nothing else.
-`;

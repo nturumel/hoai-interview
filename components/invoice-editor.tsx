@@ -21,7 +21,7 @@ function PureInvoiceEditor({
   status,
 }: InvoiceEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState<Invoice>(() => JSON.parse(content));
+  const [editedData, setEditedData] = useState<Invoice>();
   const [tempInputs, setTempInputs] = useState<{ [key: string]: string }>({});
   const [isDuplicate, setIsDuplicate] = useState(false);
 

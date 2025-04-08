@@ -1,5 +1,6 @@
 import 'server-only';
-import { and, asc, desc, eq, gt, gte, inArray, or, ilike } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, gte, inArray, sql } from 'drizzle-orm';
+import type { SQL } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import { nanoid } from 'nanoid';
@@ -23,6 +24,7 @@ import type { BlockKind } from '@/components/block';
 import type { Invoice, InvoiceItem } from '@/types/invoice';
 import { invoiceToModel } from '@/types/invoice';
 import type { Attachment } from 'ai';
+import type { InvoiceFilter, InvoiceSort } from '@/types/invoice';
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
@@ -520,5 +522,110 @@ export async function checkDuplicateInvoice(vendorId: string, invoiceNumber: str
   } catch (error) {
     console.error('Failed to check for duplicate invoice:', error);
     throw error;
+  }
+}
+
+export async function searchInvoices(
+  filters: InvoiceFilter[],
+  sort?: InvoiceSort,
+  pagination?: { page: number; pageSize: number }
+) {
+  try {
+    const where: SQL[] = [];
+
+    for (const { field, operator, value } of filters) {
+      if (operator === 'contains' && typeof value === 'string') {
+        if (field === 'vendorName') {
+          where.push(sql`v.name LIKE ${`%${value}%`}`);
+        } else {
+          where.push(sql`i.${sql.raw(field)} LIKE ${`%${value}%`}`);
+        }
+      }
+
+      if (operator === 'equals') {
+        if (field === 'vendorName' && typeof value === 'string') {
+          where.push(sql`v.name = ${value}`);
+        } else {
+          where.push(sql`i.${sql.raw(field)} = ${value}`);
+        }
+      }
+
+      if ((operator === 'greaterThan' || operator === 'lessThan') && (typeof value === 'number' || value instanceof Date)) {
+        const op = operator === 'greaterThan' ? sql`>` : sql`<`;
+        where.push(sql`i.${sql.raw(field)} ${op} ${value}`);
+      }
+
+      if (operator === 'between' && typeof value === 'object') {
+        const { min, max, start, end } = value as {
+          min?: number;
+          max?: number;
+          start?: Date;
+          end?: Date;
+        };
+
+        if (start) where.push(sql`i.${sql.raw(field)} >= ${start}`);
+        if (end) where.push(sql`i.${sql.raw(field)} <= ${end}`);
+        if (min !== undefined) where.push(sql`i.${sql.raw(field)} >= ${min}`);
+        if (max !== undefined) where.push(sql`i.${sql.raw(field)} <= ${max}`);
+      }
+    }
+
+    const whereClause = where.length ? sql.join(where, sql` AND `) : sql`1=1`;
+
+    // Sorting
+    const sortField = sort?.field ?? 'invoiceDate';
+    const sortDirection = sort?.direction?.toUpperCase() === 'DESC' ? sql.raw('DESC') : sql.raw('ASC');
+
+    const orderBy =
+      sortField === 'vendorName'
+        ? sql`v.name ${sortDirection}`
+        : sql`i.${sql.raw(sortField)} ${sortDirection}`;
+
+    // Pagination
+    const page = pagination?.page ?? 1;
+    const pageSize = pagination?.pageSize ?? 50;
+    const offset = (page - 1) * pageSize;
+
+    const data = await db.all<Invoice>(sql`
+      SELECT
+        i.id,
+        i."invoiceNumber",
+        i."invoiceDate",
+        i."dueDate",
+        i."totalAmount",
+        i.status,
+        i.currency,
+        i."customerName",
+        i."customerAddress",
+        v.name as "vendorName",
+        v.address as "vendorAddress"
+      FROM ${invoice} i
+      LEFT JOIN ${vendor} v ON i."vendorId" = v.id
+      WHERE ${whereClause}
+      ORDER BY ${orderBy}
+      LIMIT ${pageSize}
+      OFFSET ${offset}
+    `);
+
+    const [{ count }] = await db.all<{ count: number }>(sql`
+      SELECT COUNT(*) as count
+      FROM ${invoice} i
+      LEFT JOIN ${vendor} v ON i."vendorId" = v.id
+      WHERE ${whereClause}
+    `);
+
+    return {
+      data,
+      total: count,
+      page,
+      pageSize
+    };
+  } catch (error) {
+    console.error('Failed to search invoices:', error);
+    throw new Error(
+      error instanceof Error
+        ? `Failed to search invoices: ${error.message}`
+        : 'Failed to search invoices'
+    );
   }
 }
