@@ -1,7 +1,6 @@
 import { Block } from '@/components/create-block';
 import {
   CopyIcon,
-  FileIcon,
   RedoIcon,
   SparklesIcon,
   UndoIcon,

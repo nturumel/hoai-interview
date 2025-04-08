@@ -28,6 +28,7 @@ export interface Invoice {
   createdAt?: Date;
   updatedAt?: Date;
   lastEditedBy?: string;
+  attachmentIds?: string[];
 }
 
 // Zod schema for validation
@@ -55,6 +56,7 @@ export const invoiceSchema = z.object({
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
   lastEditedBy: z.string().optional(),
+  attachmentIds: z.array(z.string()).optional(),
 });
 
 // Type for the database model (matches schema.ts)
@@ -72,6 +74,7 @@ export interface InvoiceModel {
   createdAt: Date; // timestamp
   updatedAt: Date; // timestamp
   lastEditedBy?: string;
+  attachmentIds?: string[];
 }
 
 // Helper functions for converting between types
@@ -91,6 +94,7 @@ export function invoiceToModel(invoice: Invoice): Omit<InvoiceModel, 'id' | 'cre
     totalAmount: invoice.totalAmount,
     status: invoice.status,
     lastEditedBy: invoice.lastEditedBy,
+    attachmentIds: invoice.attachmentIds,
   };
 }
 
@@ -112,5 +116,6 @@ export function modelToInvoice(model: InvoiceModel, vendor: { name: string; addr
     createdAt: model.createdAt,
     updatedAt: model.updatedAt,
     lastEditedBy: model.lastEditedBy,
+    attachmentIds: model.attachmentIds,
   };
 } 

@@ -55,8 +55,14 @@ export async function POST(request: Request) {
   }
 
   await saveMessages({
-    messages: [{...userMessage, createdAt: new Date(), chatId: id, parts: userMessage.parts}], attachments: userMessage.experimental_attachments },
-  );
+    messages: [{
+      ...userMessage,
+      createdAt: new Date(),
+      chatId: id,
+      parts: userMessage.parts
+    }],
+    attachments: userMessage.experimental_attachments
+  });
 
   return createDataStreamResponse({
     execute: (dataStream) => {
@@ -92,8 +98,8 @@ export async function POST(request: Request) {
                     role: message.role,
                     content: message.content,
                     createdAt: new Date(),
-                    experimental_attachments: [], // TODO: get rid of this, assistant messages don't have attachments
-                    parts: [], // TODO: get rid of this, assistant messages don't have parts
+                    experimental_attachments: [], // Assistant messages don't have attachments
+                    parts: [], // Assistant messages don't have parts
                   };
                 }),
               });
@@ -114,7 +120,7 @@ export async function POST(request: Request) {
     },
     onError: (error: unknown) => {
       console.error('Error in chat', error);
-      return 'Oops, an error occured!';
+      return 'Oops, an error occurred!';
     },
   });
 }
