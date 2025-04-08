@@ -4,6 +4,7 @@ import type { Invoice, InvoiceItem } from '@/types/invoice';
 import { upsertInvoice, checkInvoiceDuplicate } from '@/app/actions/invoice';
 import { toast } from 'sonner';
 import { Badge } from "@/components/ui/badge";
+import { DocumentSkeleton } from '@/components/document-skeleton';
 
 interface InvoiceEditorProps {
   content: string;
@@ -20,6 +21,9 @@ function PureInvoiceEditor({
   saveContent,
   status,
 }: InvoiceEditorProps) {
+  if (!content?.trim()) {
+    return <DocumentSkeleton blockKind="invoice" />;
+  }
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<Invoice>(() => JSON.parse(content));
   const [tempInputs, setTempInputs] = useState<{ [key: string]: string }>({});

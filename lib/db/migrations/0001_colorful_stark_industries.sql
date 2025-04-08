@@ -3,9 +3,11 @@ CREATE TABLE `Invoice` (
 	`vendorId` text NOT NULL,
 	`invoiceNumber` text NOT NULL,
 	`customerName` text NOT NULL,
+	`customerAddress` text NOT NULL,
 	`invoiceDate` integer NOT NULL,
 	`dueDate` integer NOT NULL,
 	`totalAmount` real NOT NULL,
+	`currency` text DEFAULT 'USD' NOT NULL,
 	`status` text DEFAULT 'pending' NOT NULL,
 	`createdAt` integer NOT NULL,
 	`updatedAt` integer NOT NULL,
@@ -40,5 +42,11 @@ CREATE TABLE `Vendor` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
 	`description` text,
+	`address` text NOT NULL,
 	`createdAt` integer NOT NULL
 );
+--> statement-breakpoint
+ALTER TABLE `Document` ADD `userId` text NOT NULL;--> statement-breakpoint
+ALTER TABLE `Message` ADD `experimental_attachments` blob DEFAULT '[]';--> statement-breakpoint
+ALTER TABLE `Message` ADD `parts` blob DEFAULT '[]';--> statement-breakpoint
+ALTER TABLE `Suggestion` ADD `userId` text NOT NULL;

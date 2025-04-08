@@ -1,1 +1,0 @@
-ALTER TABLE `Document` ADD `userId` text DEFAULT 'user_0' NOT NULL;

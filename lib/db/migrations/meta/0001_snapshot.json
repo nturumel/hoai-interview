@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "10d8f32b-c540-44fa-baeb-3967a0d787b4",
+  "id": "224ef717-8df5-47b1-96ee-2d48d143b82c",
   "prevId": "bd2bf9c5-82f0-4819-97bb-380e712ec121",
   "tables": {
     "Chat": {
@@ -80,6 +80,13 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'text'"
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {},
@@ -126,6 +133,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "customerAddress": {
+          "name": "customerAddress",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "invoiceDate": {
           "name": "invoiceDate",
           "type": "integer",
@@ -146,6 +160,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'USD'"
         },
         "status": {
           "name": "status",
@@ -322,6 +344,22 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "experimental_attachments": {
+          "name": "experimental_attachments",
+          "type": "blob",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'[]'"
+        },
+        "parts": {
+          "name": "parts",
+          "type": "blob",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'[]'"
         }
       },
       "indexes": {},
@@ -468,6 +506,13 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {},
@@ -513,6 +558,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false,
+          "autoincrement": false
+        },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
           "autoincrement": false
         },
         "createdAt": {
