@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, useRef } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Invoice, InvoiceItem } from '@/types/invoice';
 import { upsertInvoice, checkInvoiceDuplicate } from '@/app/actions/invoice';
