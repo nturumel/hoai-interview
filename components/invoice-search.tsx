@@ -1,10 +1,14 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { DocumentSkeleton } from '@/components/document-skeleton';
 import type { Invoice } from '@/types/invoice';
-import { cn } from '@/lib/utils';
+import { PencilIcon } from 'lucide-react';
+import { DialogContent, DialogTitle } from '@radix-ui/react-dialog';
+import { Button } from '@/components/ui/button';
+import { Dialog } from '@/components/ui/dialog';
+import { InvoiceEditor } from '@/components/invoice-editor';
 
 interface InvoiceSearchProps {
   content: string;
@@ -18,6 +22,7 @@ function PureInvoiceSearch({ content, status }: InvoiceSearchProps) {
   let invoices: Invoice[] = [];
   let processingError: string | undefined;
   let tokenUsage: number | undefined;
+  const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
 
   if (content) {
     try {
@@ -49,6 +54,14 @@ function PureInvoiceSearch({ content, status }: InvoiceSearchProps) {
 
   return (
     <div className="space-y-4">
+      {activeInvoice && (
+        <Dialog open onOpenChange={() => setActiveInvoice(null)}>
+          <DialogContent className="max-w-5xl w-full bg-background/90 backdrop-blur-md border shadow-xl rounded-xl p-6">
+            <DialogTitle>Edit Invoice</DialogTitle>
+            <InvoiceEditor content={JSON.stringify(activeInvoice)} />
+          </DialogContent>
+        </Dialog>
+      )}
       <div className="overflow-x-auto border rounded-lg">
         <table className="min-w-full text-sm">
           <thead className="bg-muted border-b text-muted-foreground">
@@ -64,6 +77,11 @@ function PureInvoiceSearch({ content, status }: InvoiceSearchProps) {
           <tbody className="divide-y divide-border">
             {invoices.map((invoice) => (
               <tr key={invoice.id ?? `${invoice.invoiceNumber}-${invoice.customerName}-${invoice.totalAmount}`}>
+                <td>
+                  <Button onClick={() => setActiveInvoice(invoice)}>
+                    <PencilIcon className="w-4 h-4" />
+                  </Button>
+                </td>
                 <td className="px-4 py-2 font-medium text-primary whitespace-nowrap">
                   {invoice.invoiceNumber}
                 </td>

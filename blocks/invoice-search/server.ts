@@ -11,14 +11,14 @@ import {
   invoiceDocument,
 } from '@/lib/db/schema';
 import { getTableColumns } from 'drizzle-orm';
-import { describeTable, invoiceSearchSystemPrompt, updateDocumentPrompt } from '@/lib/ai/prompts';
+import { describeTable, invoiceSearchSystemPrompt } from '@/lib/ai/prompts';
 import type { Invoice } from '@/types/invoice';
 
 export function normalizeFlatInvoices(rows: any[]): Invoice[] {
   const grouped: Record<string, Invoice> = {};
 
   for (const row of rows) {
-    const invoiceId = row.id;
+    const invoiceId = row.invoice_id;
 
     if (!grouped[invoiceId]) {
       grouped[invoiceId] = {
@@ -29,13 +29,13 @@ export function normalizeFlatInvoices(rows: any[]): Invoice[] {
         totalAmount: row.totalAmount,
         currency: row.currency,
         vendorId: row.vendorId,
-        vendorName: row.vendorName,
-        vendorAddress: row.vendorAddress,
+        vendorName: row.vendor_name,
+        vendorAddress: row.vendor_address,
         customerName: row.customerName,
         customerAddress: row.customerAddress,
         status: row.status,
-        createdAt: row.createdAt ? new Date(row.createdAt * 1000) : undefined,
-        updatedAt: row.updatedAt ? new Date(row.updatedAt * 1000) : undefined,
+        createdAt: row.invoice_createdAt ? new Date(row.invoice_createdAt * 1000) : undefined,
+        updatedAt: row.invoice_updatedAt ? new Date(row.invoice_updatedAt * 1000) : undefined,
         lastEditedBy: row.lastEditedBy ?? undefined,
         items: [],
         documents: [],
@@ -46,32 +46,33 @@ export function normalizeFlatInvoices(rows: any[]): Invoice[] {
 
     // Line items
     if (
-      row.lineItemDescription &&
+      row.lineItem_id &&
+      row.lineItem_description &&
       !invoice.items.find(
         (i) =>
-          i.description === row.lineItemDescription &&
-          i.quantity === row.quantity &&
-          i.unitPrice === row.unitPrice &&
-          i.amount === row.lineItemAmount
+          i.description === row.lineItem_description &&
+          i.quantity === row.lineItem_quantity &&
+          i.unitPrice === row.lineItem_unitPrice &&
+          i.amount === row.lineItem_amount
       )
     ) {
       invoice.items.push({
-        description: row.lineItemDescription,
-        quantity: row.quantity,
-        unitPrice: row.unitPrice,
-        amount: row.lineItemAmount,
+        description: row.lineItem_description,
+        quantity: row.lineItem_quantity,
+        unitPrice: row.lineItem_unitPrice,
+        amount: row.lineItem_amount,
       });
     }
 
     // Documents
     if (
-      row.documentId &&
-      !invoice.documents?.find((d) => d.documentId === row.documentId)
+      row.document_id &&
+      !invoice.documents?.find((d) => d.documentId === row.document_id)
     ) {
       invoice.documents?.push({
-        documentId: row.documentId,
-        documentUrl: row.documentUrl,
-        documentName: row.documentName,
+        documentId: row.document_id,
+        documentUrl: row.document_url,
+        documentName: row.document_name,
       });
     }
   }

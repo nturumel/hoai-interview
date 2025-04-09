@@ -7,19 +7,19 @@ import { Badge } from "@/components/ui/badge";
 import { DocumentSkeleton } from '@/components/document-skeleton';
 
 interface InvoiceEditorProps {
-  content: string;
-  currentVersionIndex: number;
-  isCurrentVersion: boolean;
-  saveContent: (content: string, isCurrentVersion: boolean) => void;
-  status: 'idle' | 'streaming' | 'saving';
+  content?: string;
+  currentVersionIndex?: number;
+  isCurrentVersion?: boolean;
+  saveContent?: (content: string, isCurrentVersion: boolean) => void;
+  status?: 'idle' | 'streaming' | 'saving';
 }
 
 function PureInvoiceEditor({
-  content,
-  currentVersionIndex,
-  isCurrentVersion,
+  content = '',
+  currentVersionIndex = 0,
+  isCurrentVersion = true,
   saveContent,
-  status,
+  status = 'idle',
 }: InvoiceEditorProps) {
   if (!content?.trim()) {
     return <DocumentSkeleton blockKind="invoice" />;
@@ -67,7 +67,7 @@ function PureInvoiceEditor({
   };
 
   const handleContentChange = (newContent: string, debounce = true) => {
-    if (newContent !== content) {
+    if (newContent !== content && saveContent) {
       saveContent(newContent, debounce);
     }
   };
@@ -375,7 +375,9 @@ function PureInvoiceEditor({
             <button
               type="button"
               onClick={() => {
-                saveContent(JSON.stringify(editedData), true);
+                if (saveContent) {
+                  saveContent(JSON.stringify(editedData), true);
+                }
                 setIsEditing(false);
               }}
               className="invoice-button-primary"
