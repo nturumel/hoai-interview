@@ -27,3 +27,7 @@ pnpm dev
 ```
 
 Your app template should now be running on [localhost:3000](http://localhost:3000/).
+
+## Usage
+1. To process invoice, please upload invoice and then ask the chat to process it.
+2. To search for invoices, just ask the chat model to search for the invoice.
