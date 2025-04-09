@@ -165,19 +165,23 @@ export const lineItem = sqliteTable('LineItem', {
 
 export type LineItem = InferSelectModel<typeof lineItem>;
 
-// Simple table to track processed documents
-export const processedDocument = sqliteTable('ProcessedDocument', {
-  id: text('id').primaryKey().notNull(),
-  invoiceId: text('invoiceId')
-    .notNull()
-    .references(() => invoice.id),
-  documentUrl: text('documentUrl').notNull(),
-  documentHash: text('documentHash').notNull(), // Store file hash to prevent duplicate uploads
-  uploadedAt: integer('uploadedAt', { mode: 'timestamp' }).notNull(),
-}, (table) => {
-  return {
-    // Prevent duplicate file uploads
-    documentHashIdx: uniqueIndex('document_hash_idx').on(table.documentHash),
-  };
-});
+// Table to link Invoices to Documents
+export const invoiceDocument = sqliteTable(
+  'InvoiceDocument',
+  {
+    invoiceId: text('invoiceId')
+      .notNull()
+      .references(() => invoice.id),
+    documentId: text('documentId').notNull(),
+    documentUrl: text('documentUrl').notNull(),
+    documentName: text('documentName').notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.invoiceId, table.documentId] }),
+  })
+);
+
+export type InvoiceDocument = InferSelectModel<typeof invoiceDocument>;
+
+
 

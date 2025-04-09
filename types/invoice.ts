@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// Base types
+// Shared types
 export interface InvoiceItem {
   description: string;
   quantity: number;
@@ -8,9 +8,15 @@ export interface InvoiceItem {
   amount: number;
 }
 
+export interface DocumentLink {
+  documentId: string;
+  documentUrl: string;
+  documentName: string;
+}
+
 export type InvoiceStatus = 'pending' | 'paid' | 'overdue';
 
-// Core invoice interface used across the application
+// Invoice domain type
 export interface Invoice {
   id?: string;
   invoiceNumber: string;
@@ -28,9 +34,12 @@ export interface Invoice {
   createdAt?: Date;
   updatedAt?: Date;
   lastEditedBy?: string;
+  documents?: DocumentLink[];
+  processingError?: string;
+  tokenUsage?: number
 }
 
-// Zod schema for validation
+// Zod schemas
 export const invoiceItemSchema = z.object({
   description: z.string(),
   quantity: z.number().min(0),
@@ -38,8 +47,14 @@ export const invoiceItemSchema = z.object({
   amount: z.number().min(0),
 });
 
+export const documentSchema = z.object({
+  documentId: z.string(),
+  documentUrl: z.string().url(),
+  documentName: z.string(),
+});
+
 export const invoiceSchema = z.object({
-  id: z.string().optional(),
+  id: z.string().optional().describe('The ID of the invoice. Leave empty; populated later.'),
   invoiceNumber: z.string(),
   date: z.string(),
   dueDate: z.string(),
@@ -55,9 +70,11 @@ export const invoiceSchema = z.object({
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
   lastEditedBy: z.string().optional(),
+  processingError: z.string().optional().describe('Errors that occurred while processing the attachments. If they are not invoices, they are not clear etc.'),
+  documents: z.array(documentSchema).optional().describe('Documents associated with the invoice. Leave empty; populated later.'),
 });
 
-// Type for the database model (matches schema.ts)
+// Model type for DB
 export interface InvoiceModel {
   id: string;
   vendorId: string;
@@ -65,21 +82,20 @@ export interface InvoiceModel {
   customerName: string;
   customerAddress: string;
   currency: string;
-  invoiceDate: Date; // timestamp
-  dueDate: Date; // timestamp
+  invoiceDate: Date;
+  dueDate: Date;
   totalAmount: number;
   status: InvoiceStatus;
-  createdAt: Date; // timestamp
-  updatedAt: Date; // timestamp
+  createdAt: Date;
+  updatedAt: Date;
   lastEditedBy?: string;
+  documents?: DocumentLink[];
 }
 
-// Helper functions for converting between types
+// Conversion helpers
 export function invoiceToModel(invoice: Invoice): Omit<InvoiceModel, 'id' | 'createdAt' | 'updatedAt'> {
-  if (!invoice.vendorId) {
-    throw new Error('vendorId is required when converting to database model');
-  }
-  
+  if (!invoice.vendorId) throw new Error('vendorId is required when converting to database model');
+
   return {
     vendorId: invoice.vendorId,
     invoiceNumber: invoice.invoiceNumber,
@@ -91,10 +107,15 @@ export function invoiceToModel(invoice: Invoice): Omit<InvoiceModel, 'id' | 'cre
     totalAmount: invoice.totalAmount,
     status: invoice.status,
     lastEditedBy: invoice.lastEditedBy,
+    documents: invoice.documents ?? [],
   };
 }
 
-export function modelToInvoice(model: InvoiceModel, vendor: { name: string; address: string }, items: InvoiceItem[]): Invoice {
+export function modelToInvoice(
+  model: InvoiceModel,
+  vendor: { name: string; address: string },
+  items: InvoiceItem[]
+): Invoice {
   return {
     id: model.id,
     invoiceNumber: model.invoiceNumber,
@@ -112,5 +133,6 @@ export function modelToInvoice(model: InvoiceModel, vendor: { name: string; addr
     createdAt: model.createdAt,
     updatedAt: model.updatedAt,
     lastEditedBy: model.lastEditedBy,
+    documents: model.documents,
   };
-} 
+}

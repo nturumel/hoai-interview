@@ -33,6 +33,10 @@ function PureInvoiceEditor({
     // This should not be needed ideally, but the editor is not updating when the version changes
     try {
       const newData = JSON.parse(content);
+      if (newData.processingError) {
+        toast.error(newData.processingError);
+        return;
+      }
       setEditedData(newData);
       setIsEditing(false);
       setTempInputs({});
@@ -74,7 +78,7 @@ function PureInvoiceEditor({
       newItems[index] = {
         ...newItems[index],
         [field]: value,
-        amount: field === 'quantity' || field === 'unitPrice' 
+        amount: field === 'quantity' || field === 'unitPrice'
           ? Number(value) * (field === 'quantity' ? newItems[index].unitPrice : newItems[index].quantity)
           : newItems[index].amount
       };
@@ -121,6 +125,17 @@ function PureInvoiceEditor({
       e.currentTarget.blur();
     }
   };
+  if (editedData?.processingError) {
+    return (
+      <div className="p-4 border border-destructive bg-destructive/10 rounded-md">
+        <p className="text-destructive font-medium mb-2">
+          Error processing invoice attachments:
+        </p>
+        <p className="text-destructive text-sm mb-4">{editedData.processingError}</p>
+        <DocumentSkeleton blockKind="invoice" />
+      </div>
+    );
+  }
 
   return (
     <div className="invoice-container">
@@ -174,13 +189,12 @@ function PureInvoiceEditor({
           </div>
         </div>
         <div className="text-right">
-          <span className={`invoice-badge ${
-            editedData.status === 'paid'
-              ? 'status-success'
-              : editedData.status === 'pending'
+          <span className={`invoice-badge ${editedData.status === 'paid'
+            ? 'status-success'
+            : editedData.status === 'pending'
               ? 'status-warning'
               : 'status-error'
-          }`}>
+            }`}>
             {isEditing ? (
               <select
                 value={editedData.status}
@@ -275,22 +289,21 @@ function PureInvoiceEditor({
           </thead>
           <tbody>
             {editedData.items.map((item, index) => (
-              <tr key={`${item.description}-${item.quantity}-${item.unitPrice}`} className="border-b">
-                <td className="invoice-table-cell">
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={item.description}
-                      onChange={(e) => updateItem(index, 'description', e.target.value)}
-                      className="invoice-input w-full"
-                      aria-label={`Item ${index + 1} Description`}
-                      placeholder="Enter item description"
-                      required
-                    />
-                  ) : (
-                    item.description
-                  )}
-                </td>
+              <tr key={`${item.description}-${item.quantity}-${item.unitPrice}-${index}`} className="border-b">                <td className="invoice-table-cell">
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={(e) => updateItem(index, 'description', e.target.value)}
+                    className="invoice-input w-full"
+                    aria-label={`Item ${index + 1} Description`}
+                    placeholder="Enter item description"
+                    required
+                  />
+                ) : (
+                  item.description
+                )}
+              </td>
                 <td className="text-right invoice-table-cell">
                   {isEditing ? (
                     <input
@@ -408,6 +421,30 @@ function PureInvoiceEditor({
         <Badge variant="destructive" className="mt-2">
           Duplicate invoice detected
         </Badge>
+      )}
+      {editedData.documents && editedData.documents.length > 0 && (
+        <div className="mt-6">
+          <h3 className="font-semibold mb-2">Documents</h3>
+          <ul className="list-disc list-inside text-sm space-y-1">
+            {editedData.documents?.map((doc) => (
+              <li key={doc.documentId}>
+                <a
+                  href={doc.documentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {doc.documentName}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {typeof editedData.tokenUsage === 'number' && (
+        <div className="mt-4 text-sm text-muted-foreground">
+          <span className="font-medium">Total Tokens Used:</span> {editedData.tokenUsage}
+        </div>
       )}
     </div>
   );

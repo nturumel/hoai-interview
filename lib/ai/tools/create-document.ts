@@ -9,18 +9,6 @@ interface CreateDocumentProps {
   dataStream: DataStreamWriter;
   chatId: string;
 }
-export const experimentalAttachmentsSchema = z
-  .array(
-    z.object({
-      filename: z.string(),
-      type: z.string(), // you could restrict this with z.enum(['image', 'pdf', ...])
-      content: z.unknown(), // assuming it's a parsed JSON structure
-    })
-  )
-  .optional()
-  .describe(
-    'Extracted information from the attachments of the chat message in a structured JSON format. Include the filename, type, and content. Content should be structured JSON.'
-  );
 
 export const createDocument = ({ session, dataStream, chatId }: CreateDocumentProps) =>
   tool({
@@ -29,9 +17,8 @@ export const createDocument = ({ session, dataStream, chatId }: CreateDocumentPr
     parameters: z.object({
       title: z.string(),
       kind: z.enum(blockKinds),
-      experimental_attachments: experimentalAttachmentsSchema,
     }),
-    execute: async ({ title, kind, experimental_attachments }) => {
+    execute: async ({ title, kind }) => {
       const id = generateUUID();
 
       dataStream.writeData({
@@ -69,7 +56,6 @@ export const createDocument = ({ session, dataStream, chatId }: CreateDocumentPr
         dataStream,
         session,
         chatId,
-        experimental_attachments
       });
 
       dataStream.writeData({ type: 'finish', content: '' });

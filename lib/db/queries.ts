@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, asc, desc, eq, gt, gte, inArray, or, ilike } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, gte, inArray, or, ilike, sql, like, getTableColumns, lte } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import { nanoid } from 'nanoid';
@@ -15,10 +15,11 @@ import {
   invoice,
   lineItem,
   vendor,
+  invoiceDocument,
 } from './schema';
 import type { BlockKind } from '@/components/block';
 import type { Invoice, InvoiceItem } from '@/types/invoice';
-import { invoiceToModel } from '@/types/invoice';
+import { invoiceToModel, modelToInvoice } from '@/types/invoice';
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
@@ -329,7 +330,8 @@ export async function updateChatVisiblityById({
 
 export async function upsertInvoiceWithItems(
   invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt' | 'items'> & { id?: string; lastEditedBy?: string },
-  items?: InvoiceItem[]
+  items?: InvoiceItem[],
+  documentInfo?: { documentId: string; documentUrl: string; documentName: string }
 ) {
   if (!invoiceData.vendorId) {
     throw new Error('vendorId is required');
@@ -351,6 +353,7 @@ export async function upsertInvoiceWithItems(
             invoiceDate: new Date(invoiceData.date),
             dueDate: new Date(invoiceData.dueDate),
             updatedAt: now,
+            ...(invoiceData.lastEditedBy && { lastEditedBy: invoiceData.lastEditedBy }),
           })
           .where(eq(invoice.id, invoiceData.id));
         invoiceId = invoiceData.id;
@@ -364,6 +367,7 @@ export async function upsertInvoiceWithItems(
           dueDate: new Date(invoiceData.dueDate),
           createdAt: now,
           updatedAt: now,
+          ...(invoiceData.lastEditedBy && { lastEditedBy: invoiceData.lastEditedBy }),
         });
         invoiceId = newId;
       }
@@ -387,13 +391,38 @@ export async function upsertInvoiceWithItems(
             updatedAt: now,
           }))
         );
+      } else if (invoiceData.id) {
+        // If updating and no items provided, potentially clear existing items
+        await tx.delete(lineItem).where(eq(lineItem.invoiceId, invoiceId));
+      }
+
+      // Upsert Invoice Document Link
+      if (documentInfo) {
+        await tx
+          .insert(invoiceDocument)
+          .values({
+            invoiceId: invoiceId,
+            documentId: documentInfo.documentId,
+            documentUrl: documentInfo.documentUrl,
+            documentName: documentInfo.documentName,
+          })
+          .onConflictDoUpdate({
+            target: [invoiceDocument.invoiceId, invoiceDocument.documentId],
+            set: {
+              documentUrl: documentInfo.documentUrl,
+              documentName: documentInfo.documentName,
+            },
+          });
       }
 
       return invoiceId;
     });
   } catch (error) {
-    console.error('Failed to upsert invoice:', error);
-    throw error;
+    console.error(`Failed to upsert invoice (ID: ${invoiceData.id ?? 'new'}):`, error);
+    if (error instanceof Error && 'code' in error) {
+      console.error(`Database error code: ${error.code}`);
+    }
+    throw new Error(`Database operation failed during invoice upsert: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
