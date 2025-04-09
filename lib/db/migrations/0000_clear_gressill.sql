@@ -32,7 +32,7 @@ CREATE TABLE `Invoice` (
 	FOREIGN KEY (`vendorId`) REFERENCES `Vendor`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `vendor_invoice_idx` ON `Invoice` (`vendorId`,`invoiceNumber`);--> statement-breakpoint
+CREATE UNIQUE INDEX `vendor_invoice_idx` ON `Invoice` (`vendorId`,`invoiceNumber`,`totalAmount`);--> statement-breakpoint
 CREATE TABLE `InvoiceDocument` (
 	`invoiceId` text NOT NULL,
 	`documentUrl` text NOT NULL,
@@ -83,7 +83,7 @@ CREATE TABLE `Vendor` (
 	`description` text,
 	`address` text NOT NULL,
 	`createdAt` integer NOT NULL,
-	`updatedAt` integer DEFAULT '"2025-04-09T08:41:14.856Z"' NOT NULL
+	`updatedAt` integer DEFAULT '"2025-04-09T15:19:37.946Z"' NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `Vote` (

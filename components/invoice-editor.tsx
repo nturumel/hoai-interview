@@ -501,7 +501,7 @@ function PureInvoiceEditor({
           className="mt-2 flex items-center gap-2 w-fit"
         >
           <AlertTriangle size={14} />
-          Duplicate invoice: Same vendor and invoice number exists
+          Duplicate invoice: Same vendor, total amount and invoice number exists
         </Badge>
       )}
       {editedData.documents && editedData.documents.length > 0 && (

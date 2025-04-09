@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "51f05ba7-3cf9-47e4-916a-c13dd02c57b6",
+  "id": "6050c34e-6206-4b3c-8c3c-f5b244c9049d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "Chat": {
@@ -204,7 +204,8 @@
           "name": "vendor_invoice_idx",
           "columns": [
             "vendorId",
-            "invoiceNumber"
+            "invoiceNumber",
+            "totalAmount"
           ],
           "isUnique": true
         }
@@ -565,7 +566,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'\"2025-04-09T08:41:14.856Z\"'"
+          "default": "'\"2025-04-09T15:19:37.946Z\"'"
         }
       },
       "indexes": {},

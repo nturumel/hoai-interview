@@ -464,7 +464,7 @@ export async function checkDuplicateInvoice(vendorId: string, invoiceNumber: str
         and(
           eq(invoice.vendorId, vendorId),
           eq(invoice.invoiceNumber, invoiceNumber),
-          // eq(invoice.totalAmount, totalAmount), We don't check total amount because it's a computed field. VendorId and invoiceNumber are enough. They are the unique identifiers.
+          eq(invoice.totalAmount, totalAmount),
         )
       )
       .limit(1);

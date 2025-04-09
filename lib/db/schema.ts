@@ -144,6 +144,7 @@ export const invoice = sqliteTable('Invoice', {
     vendorInvoiceIdx: uniqueIndex('vendor_invoice_idx').on(
       table.vendorId,
       table.invoiceNumber,
+      table.totalAmount,
     ),
   };
 });
