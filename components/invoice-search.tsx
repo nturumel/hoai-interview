@@ -4,6 +4,7 @@ import { memo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { DocumentSkeleton } from '@/components/document-skeleton';
 import type { Invoice } from '@/types/invoice';
+import { cn } from '@/lib/utils';
 
 interface InvoiceSearchProps {
   content: string;
@@ -13,7 +14,7 @@ interface InvoiceSearchProps {
   status: 'idle' | 'streaming' | 'saving';
 }
 
-function PureInvoiceSearch({ content }: InvoiceSearchProps) {
+function PureInvoiceSearch({ content, status }: InvoiceSearchProps) {
   let invoices: Invoice[] = [];
   let processingError: string | undefined;
   let tokenUsage: number | undefined;
@@ -47,51 +48,62 @@ function PureInvoiceSearch({ content }: InvoiceSearchProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {invoices.map((invoice) => (
-        <div
-          key={invoice.id ?? `${invoice.invoiceNumber}-${invoice.customerName}-${invoice.totalAmount}`}
-          className="rounded-md border border-border p-4 space-y-2"
-        >
-          <div className="flex justify-between items-center">
-            <h3 className="font-semibold text-base">
-              Invoice #{invoice.invoiceNumber}
-            </h3>
-            <Badge
-              variant={
-                invoice.status === 'paid'
-                  ? 'default'
-                  : invoice.status === 'pending'
-                  ? 'secondary'
-                  : 'destructive'
-              }
-            >
-              {invoice.status.toUpperCase()}
-            </Badge>
-          </div>
-
-          <p className="text-sm">
-            <span className="text-muted-foreground">Vendor:</span>{' '}
-            {invoice.vendorName} — {invoice.vendorAddress}
-          </p>
-          <p className="text-sm">
-            <span className="text-muted-foreground">Customer:</span>{' '}
-            {invoice.customerName}, {invoice.customerAddress}
-          </p>
-          <p className="text-sm">
-            <span className="text-muted-foreground">Amount:</span>{' '}
-            ${invoice.totalAmount.toFixed(2)} {invoice.currency}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Dates: {invoice.date?.split('T')[0]} → {invoice.dueDate?.split('T')[0]}
-          </p>
-        </div>
-      ))}
+    <div className="space-y-4">
+      <div className="overflow-x-auto border rounded-lg">
+        <table className="min-w-full text-sm">
+          <thead className="bg-muted border-b text-muted-foreground">
+            <tr>
+              <th className="px-4 py-2 text-left">Invoice #</th>
+              <th className="px-4 py-2 text-left">Vendor</th>
+              <th className="px-4 py-2 text-left">Customer</th>
+              <th className="px-4 py-2 text-right">Amount</th>
+              <th className="px-4 py-2 text-center">Dates</th>
+              <th className="px-4 py-2 text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {invoices.map((invoice) => (
+              <tr key={invoice.id ?? `${invoice.invoiceNumber}-${invoice.customerName}-${invoice.totalAmount}`}>
+                <td className="px-4 py-2 font-medium text-primary whitespace-nowrap">
+                  {invoice.invoiceNumber}
+                </td>
+                <td className="px-4 py-2 whitespace-nowrap">
+                  <div className="font-medium">{invoice.vendorName}</div>
+                  <div className="text-muted-foreground">{invoice.vendorAddress}</div>
+                </td>
+                <td className="px-4 py-2 whitespace-nowrap">
+                  <div>{invoice.customerName}</div>
+                  <div className="text-muted-foreground">{invoice.customerAddress}</div>
+                </td>
+                <td className="px-4 py-2 text-right whitespace-nowrap">
+                  ${invoice.totalAmount.toFixed(2)} {invoice.currency}
+                </td>
+                <td className="px-4 py-2 text-center whitespace-nowrap">
+                  {invoice.date?.split('T')[0]} → {invoice.dueDate?.split('T')[0]}
+                </td>
+                <td className="px-4 py-2 text-center whitespace-nowrap">
+                  <Badge
+                    variant={
+                      invoice.status === 'paid'
+                        ? 'default'
+                        : invoice.status === 'pending'
+                          ? 'secondary'
+                          : 'destructive'
+                    }
+                  >
+                    {invoice.status.toUpperCase()}
+                  </Badge>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {typeof tokenUsage === 'number' && (
-        <p className="text-sm text-muted-foreground">
-          <span className="font-medium">Token usage:</span> {tokenUsage}
-        </p>
+        <div className="mt-4 text-sm text-muted-foreground">
+          <span className="font-medium">Total Tokens Used:</span> {tokenUsage}
+        </div>
       )}
     </div>
   );
@@ -104,6 +116,7 @@ function areEqual(prevProps: InvoiceSearchProps, nextProps: InvoiceSearchProps) 
     !(prevProps.status === 'streaming' && nextProps.status === 'streaming') &&
     prevProps.content === nextProps.content &&
     prevProps.saveContent === nextProps.saveContent
-  );}
+  );
+}
 
 export const InvoiceSearch = memo(PureInvoiceSearch, areEqual);

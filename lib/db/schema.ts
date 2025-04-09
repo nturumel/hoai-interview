@@ -113,6 +113,7 @@ export const vendor = sqliteTable('Vendor', {
   description: text('description'),
   address: text('address').notNull(),
   createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull().default(new Date()),
 });
 
 export type Vendor = InferSelectModel<typeof vendor>;

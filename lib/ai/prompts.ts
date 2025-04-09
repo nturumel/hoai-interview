@@ -161,56 +161,68 @@ ${currentContent}
 `
             : '';
 
-export const invoiceSearchPrompt = `
-You are an expert at generating SQL queries for invoice searches.
-Given a user's search query, generate a SQL query that searches across:
-- Vendor name
-- Invoice number
-- Customer name
-- Total amount
-
-The query should:
-1. Join the invoice and vendor tables
-2. Use ILIKE for text searches
-3. Handle numeric amounts properly
-4. Order by invoice date descending
-5. Limit to 50 results
-
-Return only the SQL query, nothing else.
-`;
-
 // Helper function to describe table schema
 export function describeTable(name: string, columns: Record<string, any>) {
   return `- ${name}(${Object.keys(columns).join(', ')})`;
 }
 
 export const invoiceSearchSystemPrompt = (schemaText: string) => `
-You are a SQL assistant. Your job is to generate a valid SQL SELECT query based on user intent.
+You are a SQL assistant. Your job is to generate a valid SQLite-compatible SQL SELECT query based on the user's request.
 
 Database schema:
 ${schemaText}
 
-The result must match this Invoice object shape:
+Your query must return invoice data in the following flat format, using these exact aliases:
 
-{
-  id: string;
-  invoiceNumber: string;
-  date: string;
-  dueDate: string;
-  totalAmount: number;
-  currency: string;
-  vendorId: string;
-  vendorName: string;
-  vendorAddress: string;
-  customerName: string;
-  customerAddress: string;
-  items: Array<{ description: string; quantity: number; unitPrice: number; amount: number }>;
-  status: 'pending' | 'paid' | 'overdue';
-  createdAt: Date;
-  updatedAt: Date;
-  lastEditedBy: string;
-  documents: Array<{ documentId: string; documentUrl: string; documentName: string }>;
-}
+SELECT 
+  invoice.id AS invoice_id,
+  invoice.vendorId,
+  invoice.invoiceNumber,
+  invoice.customerName,
+  invoice.customerAddress,
+  invoice.invoiceDate,
+  invoice.dueDate,
+  invoice.totalAmount,
+  invoice.currency,
+  invoice.status,
+  invoice.createdAt AS invoice_createdAt,
+  invoice.updatedAt AS invoice_updatedAt,
+  invoice.lastEditedBy,
+  vendor.id AS vendor_id,
+  vendor.name AS vendor_name,
+  vendor.description AS vendor_description,
+  vendor.address AS vendor_address,
+  vendor.createdAt AS vendor_createdAt,
+  vendor.updatedAt AS vendor_updatedAt,
+  lineItem.id AS lineItem_id,
+  lineItem.description AS lineItem_description,
+  lineItem.quantity AS lineItem_quantity,
+  lineItem.unitPrice AS lineItem_unitPrice,
+  lineItem.amount AS lineItem_amount,
+  lineItem.createdAt AS lineItem_createdAt,
+  lineItem.updatedAt AS lineItem_updatedAt,
+  invoiceDocument.documentId AS document_id,
+  invoiceDocument.documentUrl AS document_url,
+  invoiceDocument.documentName AS document_name
+FROM 
+  invoice
+JOIN 
+  vendor ON invoice.vendorId = vendor.id
+LEFT JOIN 
+  lineItem ON invoice.id = lineItem.invoiceId
+LEFT JOIN 
+  invoiceDocument ON invoice.id = invoiceDocument.invoiceId
 
-Use LEFT JOINs. Return only the SQL string, no commentary.
+Guidelines:
+- Select all columns shown above, with exact aliases
+- Apply filters and sorting based on the user's request
+- Use LIKE for partial matches (e.g. vendor or customer names)
+- Use WHERE clauses only on valid column names
+- Use LEFT JOINs for related tables
+- Do NOT use unsupported functions like json_agg, json_build_object, or FILTER
+- Do NOT use ILIKE (not supported in SQLite)
+- Return a maximum of 50 rows using LIMIT 50
+- Return only the SQL string, no explanation or formatting
+
+Make sure the output is a single valid SQL query.
 `;
