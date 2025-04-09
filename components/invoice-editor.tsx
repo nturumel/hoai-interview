@@ -5,11 +5,20 @@ import { upsertInvoice, checkInvoiceDuplicate } from '@/app/actions/invoice';
 import { toast } from 'sonner';
 import { Badge } from "@/components/ui/badge";
 import { DocumentSkeleton } from '@/components/document-skeleton';
+import { AlertTriangle } from 'lucide-react';
 
 interface InvoiceEditorProps {
   content?: string;
   currentVersionIndex?: number;
   isCurrentVersion?: boolean;
+  /**
+   * Callback to save invoice content.
+   * TODO: This should not be optional.
+   * Currently optional because:
+   * 1. No easy way to pass document ID to create block
+   * 2. Cannot link invoice to document ID directly easily
+   * Making onSaveContent required would simplify document updates and let us actually update the invoice doc when it's called from teh search element
+   */
   saveContent?: (content: string, isCurrentVersion: boolean) => void;
   status?: 'idle' | 'streaming' | 'saving';
 }
@@ -487,8 +496,12 @@ function PureInvoiceEditor({
           </button>}
       </div>
       {isDuplicate && (
-        <Badge variant="destructive" className="mt-2">
-          Duplicate invoice detected
+        <Badge 
+          variant="destructive" 
+          className="mt-2 flex items-center gap-2 w-fit"
+        >
+          <AlertTriangle size={14} />
+          Duplicate invoice: Same vendor and invoice number exists
         </Badge>
       )}
       {editedData.documents && editedData.documents.length > 0 && (
