@@ -38,7 +38,7 @@ export async function upsertInvoice(input: z.infer<typeof upsertInvoiceSchema>) 
     );
 
     if (isDuplicate) {
-      return { success: false, error: 'Duplicate invoice detected: Same vendor, invoice number, and amount already exists' };
+      return { success: false, error: 'Duplicate invoice detected: Same vendor and invoice number already exists' };
     }
 
     const { id, lastEditedBy, items, ...invoiceData } = validatedInput;
