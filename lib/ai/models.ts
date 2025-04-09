@@ -1,13 +1,16 @@
+import { cacheMiddleware } from '@/ai/middleware';
 import { openai } from '@ai-sdk/openai';
-import { anthropic } from '@ai-sdk/anthropic';
-import { customProvider } from 'ai';
+import { customProvider, wrapLanguageModel } from 'ai';
 
 export const DEFAULT_CHAT_MODEL: string = 'openai-multimodal-model';
 
 export const myProvider = customProvider({
   languageModels: {
     // Multimodal models
-    'openai-multimodal-model': openai('gpt-4o'),
+    'openai-multimodal-model': wrapLanguageModel({
+      model: openai('gpt-4o'),
+      middleware: cacheMiddleware,
+    }),
     'title-model': openai('gpt-4-turbo'),
     'block-model': openai('gpt-4o-mini'),
   },
