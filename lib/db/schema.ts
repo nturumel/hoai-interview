@@ -144,7 +144,6 @@ export const invoice = sqliteTable('Invoice', {
     vendorInvoiceIdx: uniqueIndex('vendor_invoice_idx').on(
       table.vendorId,
       table.invoiceNumber,
-      table.totalAmount
     ),
   };
 });
@@ -173,12 +172,11 @@ export const invoiceDocument = sqliteTable(
     invoiceId: text('invoiceId')
       .notNull()
       .references(() => invoice.id),
-    documentId: text('documentId').notNull(),
     documentUrl: text('documentUrl').notNull(),
     documentName: text('documentName').notNull(),
   },
   (table) => ({
-    pk: primaryKey({ columns: [table.invoiceId, table.documentId] }),
+    pk: primaryKey({ columns: [table.invoiceId, table.documentUrl] }),
   })
 );
 

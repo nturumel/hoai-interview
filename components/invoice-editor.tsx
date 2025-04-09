@@ -37,6 +37,14 @@ function PureInvoiceEditor({
         toast.error(newData.processingError);
         return;
       }
+      // 🔧 Ensure createdAt/updatedAt are Dates
+      if (typeof newData.createdAt === 'string') {
+        newData.createdAt = new Date(newData.createdAt);
+      }
+
+      if (typeof newData.updatedAt === 'string') {
+        newData.updatedAt = new Date(newData.updatedAt);
+      }
       setEditedData(newData);
       setIsEditing(false);
       setTempInputs({});
@@ -69,6 +77,7 @@ function PureInvoiceEditor({
   const handleContentChange = (newContent: string, debounce = true) => {
     if (newContent !== content && saveContent) {
       saveContent(newContent, debounce);
+      setIsDuplicate(false); // ✅ Enable submit again on new edits
     }
   };
 
@@ -402,6 +411,7 @@ function PureInvoiceEditor({
               const result = await upsertInvoice(editedData);
               if (result.success) {
                 toast.success('Invoice submitted successfully');
+                setIsDuplicate(true);
               } else {
                 toast.error(result.error || 'Failed to submit invoice');
                 if (result.error?.includes('Duplicate invoice')) {
@@ -428,8 +438,8 @@ function PureInvoiceEditor({
         <div className="mt-6">
           <h3 className="font-semibold mb-2">Documents</h3>
           <ul className="list-disc list-inside text-sm space-y-1">
-            {editedData.documents?.map((doc) => (
-              <li key={doc.documentId}>
+            {editedData.documents?.map((doc, index) => (
+              <li key={`${doc.documentUrl}-${index}`}>
                 <a
                   href={doc.documentUrl}
                   target="_blank"

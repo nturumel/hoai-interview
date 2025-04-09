@@ -67,10 +67,9 @@ export function normalizeFlatInvoices(rows: any[]): Invoice[] {
     // Documents
     if (
       row.document_id &&
-      !invoice.documents?.find((d) => d.documentId === row.document_id)
+      !invoice.documents?.find((d) => d.documentUrl === row.document_url)
     ) {
       invoice.documents?.push({
-        documentId: row.document_id,
         documentUrl: row.document_url,
         documentName: row.document_name,
       });

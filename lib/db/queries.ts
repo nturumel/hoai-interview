@@ -18,7 +18,7 @@ import {
   invoiceDocument,
 } from './schema';
 import type { BlockKind } from '@/components/block';
-import type { Invoice, InvoiceItem } from '@/types/invoice';
+import type { DocumentLink, Invoice, InvoiceItem } from '@/types/invoice';
 import { invoiceToModel, modelToInvoice } from '@/types/invoice';
 
 // Optionally, if not using email/pass login, you can
@@ -331,7 +331,7 @@ export async function updateChatVisiblityById({
 export async function upsertInvoiceWithItems(
   invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt' | 'items'> & { id?: string; lastEditedBy?: string },
   items?: InvoiceItem[],
-  documentInfo?: { documentId: string; documentUrl: string; documentName: string }
+  documentInfo?: DocumentLink[]
 ) {
   if (!invoiceData.vendorId) {
     throw new Error('vendorId is required');
@@ -397,22 +397,22 @@ export async function upsertInvoiceWithItems(
       }
 
       // Upsert Invoice Document Link
-      if (documentInfo) {
-        await tx
-          .insert(invoiceDocument)
-          .values({
-            invoiceId: invoiceId,
-            documentId: documentInfo.documentId,
-            documentUrl: documentInfo.documentUrl,
-            documentName: documentInfo.documentName,
-          })
-          .onConflictDoUpdate({
-            target: [invoiceDocument.invoiceId, invoiceDocument.documentId],
-            set: {
-              documentUrl: documentInfo.documentUrl,
-              documentName: documentInfo.documentName,
-            },
-          });
+      if (documentInfo && documentInfo.length > 0) {
+        for (const doc of documentInfo) {
+          await tx
+            .insert(invoiceDocument)
+            .values({
+              invoiceId,
+              documentUrl: doc.documentUrl,
+              documentName: doc.documentName,
+            })
+            .onConflictDoUpdate({
+              target: [invoiceDocument.invoiceId, invoiceDocument.documentUrl],
+              set: {
+                documentName: doc.documentName,
+              },
+            });
+        }
       }
 
       return invoiceId;

@@ -9,7 +9,6 @@ export interface InvoiceItem {
 }
 
 export interface DocumentLink {
-  documentId: string;
   documentUrl: string;
   documentName: string;
 }
@@ -48,7 +47,6 @@ export const invoiceItemSchema = z.object({
 });
 
 export const documentSchema = z.object({
-  documentId: z.string(),
   documentUrl: z.string().url(),
   documentName: z.string(),
 });

@@ -66,7 +66,10 @@ export const invoiceDocumentHandler = createDocumentHandler<'invoice'>({
     const invoice = result.object?.invoice;
 
     if (invoice) {
-      const content = JSON.stringify({ ...invoice, documents: userAttachments, tokenUsage: attachmentTokens + result.usage.totalTokens });
+      const content = JSON.stringify({ ...invoice, documents: userAttachments.map((a) => ({
+        documentName: a.name,
+        documentUrl: a.url,
+      })), tokenUsage: attachmentTokens + result.usage.totalTokens });
       dataStream.writeData({
         type: 'invoice-delta',
         content,

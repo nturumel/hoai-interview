@@ -201,7 +201,6 @@ SELECT
   lineItem.amount AS lineItem_amount,
   lineItem.createdAt AS lineItem_createdAt,
   lineItem.updatedAt AS lineItem_updatedAt,
-  invoiceDocument.documentId AS document_id,
   invoiceDocument.documentUrl AS document_url,
   invoiceDocument.documentName AS document_name
 FROM 

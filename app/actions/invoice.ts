@@ -44,7 +44,8 @@ export async function upsertInvoice(input: z.infer<typeof upsertInvoiceSchema>) 
     const { id, lastEditedBy, items, ...invoiceData } = validatedInput;
     const invoiceId = await upsertInvoiceWithItems(
       { ...invoiceData, id, lastEditedBy, vendorId: vendor.id },
-      items
+      items,
+      invoiceData.documents
     );
 
     return { success: true, id: invoiceId };
