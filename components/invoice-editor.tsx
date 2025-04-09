@@ -477,6 +477,11 @@ function PureInvoiceEditor({
                 const result = await upsertInvoice(editedData);
                 if (result.success) {
                   toast.success('Invoice submitted successfully');
+                  const id = result.id;
+                  // Use the id to update the invoice doc
+                  const updatedData = { ...editedData, id };
+                  setEditedData(updatedData);
+                  saveContent?.(JSON.stringify(updatedData), true);
                   setIsDuplicate(true);
                 } else {
                   toast.error(result.error || 'Failed to submit invoice');
