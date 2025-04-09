@@ -21,9 +21,6 @@ function PureInvoiceEditor({
   saveContent,
   status = 'idle',
 }: InvoiceEditorProps) {
-  if (!content?.trim()) {
-    return <DocumentSkeleton blockKind="invoice" />;
-  }
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<Invoice>(() => JSON.parse(content));
   const [tempInputs, setTempInputs] = useState<{ [key: string]: string }>({});
@@ -144,6 +141,9 @@ function PureInvoiceEditor({
         <DocumentSkeleton blockKind="invoice" />
       </div>
     );
+  }
+  if (!content?.trim()) {
+    return <DocumentSkeleton blockKind="invoice" />;
   }
 
   return (
