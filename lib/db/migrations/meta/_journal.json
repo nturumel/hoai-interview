@@ -1,33 +1,12 @@
 {
-  "version": "0",
+  "version": "0.0.1",
   "dialect": "sqlite",
   "entries": [
     {
       "idx": 0,
-      "version": "0",
-      "when": 1739483549686,
-      "tag": "0000_perfect_dracula",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
       "version": "6",
-      "when": 1744150637504,
-      "tag": "0001_colorful_stark_industries",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1744169583921,
-      "tag": "0002_amusing_doctor_strange",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1744170189931,
-      "tag": "0003_true_unus",
+      "when": 1744188074860,
+      "tag": "0000_high_mystique",
       "breakpoints": true
     }
   ]
