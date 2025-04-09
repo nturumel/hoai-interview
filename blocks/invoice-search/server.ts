@@ -1,126 +1,119 @@
 import { myProvider } from '@/lib/ai/models';
 import { createDocumentHandler } from '@/lib/blocks/server';
-import { streamObject } from 'ai';
+import { generateObject } from 'ai';
+import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '@/lib/db/queries';
-import { invoice, vendor } from '@/lib/db/schema';
-import { sql } from 'drizzle-orm';
-import { invoiceSearchPrompt } from '@/lib/ai/prompts';
+import {
+  invoice,
+  vendor,
+  lineItem,
+  invoiceDocument,
+} from '@/lib/db/schema';
+import { getTableColumns } from 'drizzle-orm';
+import { describeTable, invoiceSearchSystemPrompt, updateDocumentPrompt } from '@/lib/ai/prompts';
+
+const schemaText = [
+  describeTable('invoice', getTableColumns(invoice)),
+  describeTable('vendor', getTableColumns(vendor)),
+  describeTable('lineItem', getTableColumns(lineItem)),
+  describeTable('invoiceDocument', getTableColumns(invoiceDocument)),
+].join('\n');
 
 export const invoiceSearchDocumentHandler = createDocumentHandler<'invoice-search'>({
   kind: 'invoice-search',
-  onCreateDocument: async ({ title, dataStream }) => {
-    let draftContent = '';
 
-    const { fullStream } = streamObject({
+  onCreateDocument: async ({ title, dataStream }) => {
+    const result = await generateObject({
       model: myProvider.languageModel('block-model'),
-      system: invoiceSearchPrompt,
-      prompt: title,
+      system: invoiceSearchSystemPrompt(schemaText),
+      prompt: `Topic: "${title}". Generate a SQL query that returns invoice data matching the Invoice object.`,
       schema: z.object({
-        searchTerm: z.string().describe('Search term to use in the query'),
+        sql: z.string().describe('A valid SQL SELECT query'),
       }),
     });
 
-    for await (const delta of fullStream) {
-      const { type } = delta;
+    const sqlQuery = result.object?.sql?.trim();
+    const tokenUsage = result.usage?.totalTokens ?? null;
 
-      if (type === 'object') {
-        const { object } = delta;
-        const { searchTerm } = object;
-
-        if (searchTerm) {
-          // Execute search query using raw SQL
-          const results = await db.all(sql`
-            SELECT 
-              i.id,
-              v.name as "vendorName",
-              i."invoiceNumber",
-              i."invoiceDate",
-              i."dueDate",
-              i."totalAmount",
-              i.status,
-              i.currency,
-              i."customerName",
-              i."customerAddress",
-              v.address as "vendorAddress"
-            FROM ${invoice} i
-            LEFT JOIN ${vendor} v ON i."vendorId" = v.id
-            WHERE 
-              v.name ILIKE ${`%${searchTerm}%`} OR
-              i."invoiceNumber" ILIKE ${`%${searchTerm}%`} OR
-              i."customerName" ILIKE ${`%${searchTerm}%`} OR
-              i."totalAmount" = ${Number.parseFloat(searchTerm) || 0}
-            ORDER BY i."invoiceDate" DESC
-            LIMIT 50
-          `);
-          
-          dataStream.writeData({
-            type: 'invoice-search-delta',
-            content: JSON.stringify(results),
-          });
-
-          draftContent = JSON.stringify(results);
-        }
-      }
+    if (!sqlQuery?.toLowerCase().startsWith('select')) {
+      const content = JSON.stringify({
+        data: '',
+        processingError: 'Generated query was not a SELECT statement.',
+        tokenUsage,
+      });
+      dataStream.writeData({
+        type: 'invoice-search-delta',
+        content,
+      });
+      return content;
     }
 
-    return draftContent;
+    try {
+      const rows = await db.run(sql.raw(sqlQuery));
+      return JSON.stringify({
+        data: JSON.stringify(rows),
+        tokenUsage,
+      });
+    } catch (error) {
+      console.error('Failed to execute SQL:', error);
+      const content = JSON.stringify({
+        data: '',
+        processingError: 'SQL execution failed.',
+        tokenUsage,
+      });
+      dataStream.writeData({
+        type: 'invoice-search-delta',
+        content,
+      });
+      return content;
+    }
   },
-  onUpdateDocument: async ({ document, description, dataStream }) => {
-    let draftContent = '';
 
-    const { fullStream } = streamObject({
+  onUpdateDocument: async ({ document, description , dataStream}) => {
+    const result = await generateObject({
       model: myProvider.languageModel('block-model'),
-      system: invoiceSearchPrompt,
+      system: updateDocumentPrompt(document.content, 'invoice-search'),
       prompt: description,
       schema: z.object({
-        searchTerm: z.string().describe('Search term to use in the query'),
+        sql: z.string().describe('A valid SQL SELECT query'),
       }),
     });
 
-    for await (const delta of fullStream) {
-      const { type } = delta;
+    const sqlQuery = result.object?.sql?.trim();
+    const tokenUsage = result.usage?.totalTokens ?? null;
 
-      if (type === 'object') {
-        const { object } = delta;
-        const { searchTerm } = object;
-
-        if (searchTerm) {
-          // Execute search query using raw SQL
-          const results = await db.all(sql`
-            SELECT 
-              i.id,
-              v.name as "vendorName",
-              i."invoiceNumber",
-              i."invoiceDate",
-              i."dueDate",
-              i."totalAmount",
-              i.status,
-              i.currency,
-              i."customerName",
-              i."customerAddress",
-              v.address as "vendorAddress"
-            FROM ${invoice} i
-            LEFT JOIN ${vendor} v ON i."vendorId" = v.id
-            WHERE 
-              v.name ILIKE ${`%${searchTerm}%`} OR
-              i."invoiceNumber" ILIKE ${`%${searchTerm}%`} OR
-              i."customerName" ILIKE ${`%${searchTerm}%`} OR
-              i."totalAmount" = ${Number.parseFloat(searchTerm) || 0}
-            ORDER BY i."invoiceDate" DESC
-            LIMIT 50
-          `);
-          
-          dataStream.writeData({
-            type: 'invoice-search-delta',
-            content: JSON.stringify(results),
-          });
-
-          draftContent = JSON.stringify(results);
-        }
-      }
+    if (!sqlQuery?.toLowerCase().startsWith('select')) {
+      return JSON.stringify({
+        data: '',
+        processingError: 'Generated query was not a SELECT statement.',
+        tokenUsage,
+      });
     }
 
-    return draftContent;
+    try {
+      const rows = await db.run(sql.raw(sqlQuery));
+      const content = JSON.stringify({
+        data: JSON.stringify(rows),
+        tokenUsage,
+      });
+      dataStream.writeData({
+        type: 'invoice-search-delta',
+        content,
+      });
+      return content;
+    } catch (error) {
+      console.error('Failed to execute SQL:', error);
+      const content = JSON.stringify({
+        data: '',
+        processingError: 'SQL execution failed.',
+        tokenUsage,
+      });
+      dataStream.writeData({
+        type: 'invoice-search-delta',
+        content,
+      });
+      return content;
+    }
   },
-}); 
+});

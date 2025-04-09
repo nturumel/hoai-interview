@@ -152,7 +152,14 @@ Update the following invoice details based on the given prompt. Maintain the str
 
 ${currentContent}
 `
-          : '';
+          : type === 'invoice-search'
+            ? `\
+You are updating the invoice search query. Based on the description below, generate a new SQL SELECT query.
+
+Description:
+${currentContent}
+`
+            : '';
 
 export const invoiceSearchPrompt = `
 You are an expert at generating SQL queries for invoice searches.
@@ -170,4 +177,40 @@ The query should:
 5. Limit to 50 results
 
 Return only the SQL query, nothing else.
+`;
+
+// Helper function to describe table schema
+export function describeTable(name: string, columns: Record<string, any>) {
+  return `- ${name}(${Object.keys(columns).join(', ')})`;
+}
+
+export const invoiceSearchSystemPrompt = (schemaText: string) => `
+You are a SQL assistant. Your job is to generate a valid SQL SELECT query based on user intent.
+
+Database schema:
+${schemaText}
+
+The result must match this Invoice object shape:
+
+{
+  id: string;
+  invoiceNumber: string;
+  date: string;
+  dueDate: string;
+  totalAmount: number;
+  currency: string;
+  vendorId: string;
+  vendorName: string;
+  vendorAddress: string;
+  customerName: string;
+  customerAddress: string;
+  items: Array<{ description: string; quantity: number; unitPrice: number; amount: number }>;
+  status: 'pending' | 'paid' | 'overdue';
+  createdAt: Date;
+  updatedAt: Date;
+  lastEditedBy: string;
+  documents: Array<{ documentId: string; documentUrl: string; documentName: string }>;
+}
+
+Use LEFT JOINs. Return only the SQL string, no commentary.
 `;

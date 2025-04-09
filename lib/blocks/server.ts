@@ -8,8 +8,9 @@ import type { DataStreamWriter } from 'ai';
 import type { Document } from '../db/schema';
 import { saveDocument } from '../db/queries';
 import type { Session } from 'next-auth';
+import { invoiceSearchDocumentHandler } from '@/blocks/invoice-search/server';
 
-export const blockKinds = ['text', 'code', 'image', 'sheet', 'invoice'] as const;
+export const blockKinds = ['text', 'code', 'image', 'sheet', 'invoice', 'invoice-search'] as const;
 
 export interface SaveDocumentProps {
   id: string;
@@ -100,4 +101,5 @@ export const documentHandlersByBlockKind: Array<DocumentHandler> = [
   imageDocumentHandler,
   sheetDocumentHandler,
   invoiceDocumentHandler,
+  invoiceSearchDocumentHandler,
 ];
