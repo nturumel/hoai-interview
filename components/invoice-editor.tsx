@@ -1,4 +1,4 @@
-import { useState, memo, useEffect } from 'react';
+import { useState, useEffect, memo, useRef } from 'react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Invoice, InvoiceItem } from '@/types/invoice';
 import { upsertInvoice, checkInvoiceDuplicate } from '@/app/actions/invoice';
@@ -82,30 +82,49 @@ function PureInvoiceEditor({
     setIsEditing(false);
   };
 
-  const handleContentChange = (newContent: string, debounce = true) => {
-    if (newContent !== content && saveContent) {
-      saveContent(newContent, debounce);
-      setIsDuplicate(false); // ✅ Enable submit again on new edits
+  const handleSave = () => {
+    if (saveContent) {
+      saveContent(JSON.stringify(editedData), true);
     }
+    setIsEditing(false);
   };
 
   const updateItem = (index: number, field: keyof InvoiceItem, value: string | number) => {
     setEditedData(prev => {
       const newItems = [...prev.items];
-      newItems[index] = {
-        ...newItems[index],
-        [field]: value,
-        amount: field === 'quantity' || field === 'unitPrice'
-          ? Number(value) * (field === 'quantity' ? newItems[index].unitPrice : newItems[index].quantity)
-          : newItems[index].amount
-      };
-      const newData = {
+      const item = { ...newItems[index], [field]: value };
+
+      if (field === 'quantity' || field === 'unitPrice') {
+        item.amount = Number(item.quantity) * Number(item.unitPrice);
+      }
+
+      newItems[index] = item;
+      return {
         ...prev,
         items: newItems,
         totalAmount: newItems.reduce((sum, item) => sum + item.amount, 0)
       };
-      handleContentChange(JSON.stringify(newData), true);
-      return newData;
+    });
+  };
+
+  const addItem = () => {
+    setEditedData(prev => ({
+      ...prev,
+      items: [
+        ...prev.items,
+        { description: '', quantity: 1, unitPrice: 0, amount: 0 }
+      ]
+    }));
+  };
+
+  const deleteItem = (index: number) => {
+    setEditedData(prev => {
+      const newItems = prev.items.filter((_, i) => i !== index);
+      return {
+        ...prev,
+        items: newItems,
+        totalAmount: newItems.reduce((sum, item) => sum + item.amount, 0)
+      };
     });
   };
 
@@ -142,6 +161,7 @@ function PureInvoiceEditor({
       e.currentTarget.blur();
     }
   };
+
   if (editedData?.processingError) {
     return (
       <div className="p-4 border border-destructive bg-destructive/10 rounded-md">
@@ -153,6 +173,7 @@ function PureInvoiceEditor({
       </div>
     );
   }
+
   return (
     <div className="invoice-container">
       <div className="flex justify-between items-start">
@@ -305,18 +326,33 @@ function PureInvoiceEditor({
           </thead>
           <tbody>
             {editedData.items.map((item, index) => (
-              <tr key={`${item.description}-${item.quantity}-${item.unitPrice}-${index}`} className="border-b">
+              // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+              <tr key={index} className="border-b">
                 <td className="invoice-table-cell">
                   {isEditing ? (
-                    <input
-                      type="text"
-                      value={item.description}
-                      onChange={(e) => updateItem(index, 'description', e.target.value)}
-                      className="invoice-input w-full"
-                      aria-label={`Item ${index + 1} Description`}
-                      placeholder="Enter item description"
-                      required
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={item.description}
+                        onChange={(e) => updateItem(index, 'description', e.target.value)}
+                        className="invoice-input w-full"
+                        aria-label={`Item ${index + 1} Description`}
+                        placeholder="Enter item description"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => deleteItem(index)}
+                        className="p-1 text-destructive hover:bg-destructive/10 rounded"
+                        aria-label={`Delete item ${index + 1}`}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18" />
+                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                        </svg>
+                      </button>
+                    </div>
                   ) : (
                     item.description
                   )}
@@ -367,6 +403,23 @@ function PureInvoiceEditor({
           </tbody>
           <tfoot>
             <tr>
+              <td colSpan={4} className="invoice-table-cell">
+                {isEditing && (
+                  <button
+                    type="button"
+                    onClick={addItem}
+                    className="w-full py-2 px-4 bg-primary/10 hover:bg-primary/20 text-primary rounded-md flex items-center justify-center gap-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 5v14" />
+                      <path d="M5 12h14" />
+                    </svg>
+                    Add Item
+                  </button>
+                )}
+              </td>
+            </tr>
+            <tr>
               <td colSpan={3} className="text-right font-semibold invoice-table-cell">
                 Total
               </td>
@@ -391,12 +444,7 @@ function PureInvoiceEditor({
             </button>
             <button
               type="button"
-              onClick={() => {
-                if (saveContent) {
-                  saveContent(JSON.stringify(editedData), true);
-                }
-                setIsEditing(false);
-              }}
+              onClick={handleSave}
               className="invoice-button-primary"
               disabled={status === 'saving'}
             >
@@ -412,30 +460,31 @@ function PureInvoiceEditor({
             Edit Invoice
           </button>
         )}
-        <button
-          type="button"
-          onClick={async () => {
-            try {
-              const result = await upsertInvoice(editedData);
-              if (result.success) {
-                toast.success('Invoice submitted successfully');
-                setIsDuplicate(true);
-              } else {
-                toast.error(result.error || 'Failed to submit invoice');
-                if (result.error?.includes('Duplicate invoice')) {
+        {!isEditing &&
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const result = await upsertInvoice(editedData);
+                if (result.success) {
+                  toast.success('Invoice submitted successfully');
                   setIsDuplicate(true);
+                } else {
+                  toast.error(result.error || 'Failed to submit invoice');
+                  if (result.error?.includes('Duplicate invoice')) {
+                    setIsDuplicate(true);
+                  }
                 }
+              } catch (error) {
+                console.error('Error submitting invoice:', error);
+                toast.error('An unexpected error occurred while submitting the invoice');
               }
-            } catch (error) {
-              console.error('Error submitting invoice:', error);
-              toast.error('An unexpected error occurred while submitting the invoice');
-            }
-          }}
-          className={`invoice-button-primary ${isDuplicate ? 'opacity-50 cursor-not-allowed' : ''}`}
-          disabled={status === 'saving' || isDuplicate}
-        >
-          {status === 'saving' ? 'Submitting...' : 'Submit Invoice'}
-        </button>
+            }}
+            className={`invoice-button-primary ${isDuplicate ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={status === 'saving' || isDuplicate}
+          >
+            {status === 'saving' ? 'Submitting...' : 'Submit Invoice'}
+          </button>}
       </div>
       {isDuplicate && (
         <Badge variant="destructive" className="mt-2">
